@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MeatItem {
+  id            String   @id @default(cuid())
+  categoryCode  String   @map("category_code")
+  categoryName  String   @map("category_name")
+  label         String
+  sortOrder     Int      @map("sort_order")
+  consumptions  DailyConsumption[]
+
+  @@map("meat_items")
+}
+
+model DailyConsumption {
+  id         String   @id @default(cuid())
+  date       DateTime @db.Date
+  meatItemId String   @map("meat_item_id")
+  quantityKg Int      @map("quantity_kg")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  meatItem MeatItem @relation(fields: [meatItemId], references: [id], onDelete: Cascade)
+
+  @@unique([date, meatItemId])
+  @@map("daily_consumption")
+}

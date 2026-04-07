@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Otelin ortak CSS dosyası yüklendiyse bu değişkenlerle ince ayar yapılabilir */
+:root {
+  --tk-surface: #f8fafc;
+  --tk-card: #ffffff;
+  --tk-border: #e2e8f0;
+  --tk-accent: #047857;
+}
+
+body {
+  background: var(--tk-surface);
+  color: #0f172a;
+}
