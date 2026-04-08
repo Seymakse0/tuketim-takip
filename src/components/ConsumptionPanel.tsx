@@ -17,6 +17,8 @@ type ConsumptionResponse = {
 };
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const STEP_KG = 0.5;
+const MAX_KG = 1_000_000;
 
 function todayInputValue() {
   const n = new Date();
@@ -24,6 +26,15 @@ function todayInputValue() {
   const m = String(n.getMonth() + 1).padStart(2, "0");
   const d = String(n.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function roundHalfKg(n: number): number {
+  return Math.round(n * 2) / 2;
+}
+
+function formatKgDisplay(n: number): string {
+  const r = roundHalfKg(n);
+  return r.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
 async function readJsonResponse(res: Response): Promise<Record<string, unknown>> {
@@ -45,6 +56,7 @@ export function ConsumptionPanel() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dbUnavailable, setDbUnavailable] = useState(false);
 
   const today = todayInputValue();
   const viewingToday = date === today;
@@ -56,14 +68,18 @@ export function ConsumptionPanel() {
     setLoading(true);
     setError(null);
     setMessage(null);
+    setDbUnavailable(false);
     try {
       const res = await fetch(`/api/consumption?date=${encodeURIComponent(date)}`);
       const json = await readJsonResponse(res);
+      if (res.status === 503) {
+        setDbUnavailable(true);
+      }
       if (!res.ok) throw new Error((json.error as string) || "Veriler yüklenemedi.");
       setData(json as unknown as ConsumptionResponse);
       const next: Record<string, number> = {};
       for (const it of (json.items as ItemRow[]) ?? []) {
-        next[it.meatItemId] = it.quantityKg;
+        next[it.meatItemId] = roundHalfKg(it.quantityKg);
       }
       setValues(next);
     } catch (e) {
@@ -89,15 +105,13 @@ export function ConsumptionPanel() {
     return Array.from(map.entries());
   }, [data]);
 
-  const onQtyChange = (id: string, raw: string) => {
-    if (raw === "") {
-      setValues((v) => ({ ...v, [id]: 0 }));
-      return;
-    }
-    if (!/^\d+$/.test(raw)) return;
-    const n = parseInt(raw, 10);
-    if (n < 0 || n > 1_000_000) return;
-    setValues((v) => ({ ...v, [id]: n }));
+  const bumpKg = (id: string, delta: number) => {
+    setValues((v) => {
+      const cur = roundHalfKg(v[id] ?? 0);
+      let next = roundHalfKg(cur + delta);
+      next = Math.max(0, Math.min(MAX_KG, next));
+      return { ...v, [id]: next };
+    });
   };
 
   const save = async () => {
@@ -108,7 +122,7 @@ export function ConsumptionPanel() {
     try {
       const items = data.items.map((it) => ({
         meatItemId: it.meatItemId,
-        quantityKg: values[it.meatItemId] ?? 0,
+        quantityKg: roundHalfKg(values[it.meatItemId] ?? 0),
       }));
       const res = await fetch("/api/consumption", {
         method: "POST",
@@ -138,65 +152,52 @@ export function ConsumptionPanel() {
   };
 
   return (
-    <section
-      id="gunluk-giris"
-      className="rounded-xl border p-6 shadow-sm scroll-mt-6"
-      style={{ background: "var(--tk-card, #fff)", borderColor: "var(--tk-border, #e2e8f0)" }}
-      aria-labelledby="gunluk-giris-baslik"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-        <h2
-          id="gunluk-giris-baslik"
-          className="text-xl font-semibold"
-          style={{ color: "var(--tk-accent, #047857)" }}
-        >
-          Günlük tüketim girişi (mutfak)
-        </h2>
+    <section id="gunluk-giris" className="card scroll-mt-6" aria-labelledby="gunluk-giris-baslik">
+      <div className="card-title" style={{ marginBottom: 12 }}>
+        <h2 id="gunluk-giris-baslik">Günlük tüketim girişi (mutfak)</h2>
         {data && !loading && DATE_ONLY.test(date) && (
           <a
             href={`/api/export/daily?date=${encodeURIComponent(date)}`}
-            className="shrink-0 px-3 py-2 rounded-lg border text-sm font-medium text-slate-800 bg-white hover:bg-slate-50"
+            className="btn btn-secondary btn-sm"
           >
             Bu günü Excel’e aktar
           </a>
         )}
       </div>
 
-      <p className="text-slate-600 text-sm mb-4 leading-relaxed">
-        Her et için kullanılan <strong>kilogramı tam sayı</strong> olarak girin (ondalık yok).{" "}
-        <strong>Kaydet</strong> ile kaydedin. Geçmiş günü görmek için alttaki{" "}
+      <p className="voyage-muted mb-16">
+        Her et için <strong>kilogram</strong> değerini sağdaki{" "}
+        <strong>▲ / ▼</strong> oklarıyla <strong>0,5 kg</strong> adımlarla ayarlayın.{" "}
+        <strong>Kaydet</strong> ile kaydedin. Geçmiş gün için alttaki{" "}
         <strong>«Başka bir gün seç»</strong> bölümünü kullanın.
       </p>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="mb-16" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         {viewingToday ? (
-          <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1 text-sm font-medium">
-            Bugün ({today}) — kayıt girebilirsiniz
-          </span>
+          <span className="badge badge-green">Bugün ({today}) — kayıt girebilirsiniz</span>
         ) : (
-          <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 border border-slate-200 px-3 py-1 text-sm font-medium">
-            Seçili gün: {date}
-          </span>
+          <span className="badge badge-gray">Seçili gün: {date}</span>
         )}
         {!viewingToday && (
-          <button
-            type="button"
-            onClick={goToToday}
-            className="text-sm font-medium underline decoration-emerald-700/40 hover:decoration-emerald-700"
-            style={{ color: "var(--tk-accent, #047857)" }}
-          >
+          <button type="button" onClick={goToToday} className="btn btn-ghost btn-sm">
             Bugüne dön
           </button>
         )}
       </div>
 
-      <details className="mb-6 rounded-lg border border-slate-200 bg-slate-50/80 p-3 sm:p-4 open:bg-slate-50">
-        <summary className="cursor-pointer text-sm font-medium text-slate-800 select-none">
-          Başka bir gün seç (salt okunur, Excel)
-        </summary>
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <div>
-            <label htmlFor="tuketim-gecmis-tarih" className="block text-sm font-medium text-slate-600 mb-1">
+      <details className="voyage-details">
+        <summary>Başka bir gün seç (salt okunur, Excel)</summary>
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+            gap: 12,
+          }}
+        >
+          <div className="form-group" style={{ minWidth: 200 }}>
+            <label htmlFor="tuketim-gecmis-tarih" className="form-label">
               Tarih
             </label>
             <input
@@ -204,70 +205,125 @@ export function ConsumptionPanel() {
               type="date"
               value={historyDraft}
               onChange={(e) => setHistoryDraft(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-slate-900 bg-white"
             />
           </div>
-          <button
-            type="button"
-            onClick={applyHistoryDate}
-            className="px-4 py-2 rounded-lg text-white font-medium text-sm"
-            style={{ background: "var(--tk-accent, #047857)" }}
-          >
+          <button type="button" onClick={applyHistoryDate} className="btn btn-primary">
             Bu tarihi göster
           </button>
         </div>
       </details>
 
-      {loading && <p className="text-slate-500">Yükleniyor…</p>}
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      {message && <p className="text-emerald-700 mb-4">{message}</p>}
+      {loading && (
+        <div className="loading" role="status">
+          <span className="spinner" aria-hidden />
+          Yükleniyor…
+        </div>
+      )}
+      {error && (
+        <p className="voyage-alert voyage-alert--error mb-16 whitespace-pre-wrap" role="alert">
+          {error}
+        </p>
+      )}
+      {dbUnavailable && (
+        <div className="voyage-alert voyage-alert--warn mb-16" role="status">
+          <p style={{ fontWeight: 600, marginBottom: 8 }}>Kayıt alanları neden yok?</p>
+          <p className="voyage-muted mb-12">
+            Liste veritabanından gelir. Şu an sunucu veritabanına bağlanamıyor (503). Aşağıdakileri bu
+            bilgisayarda deneyin:
+          </p>
+          <ol className="voyage-help-list">
+            <li>
+              <strong>Docker Desktop</strong> açık olsun (yerel PostgreSQL konteyneri için).
+            </li>
+            <li>
+              Proje klasöründe terminal: <code className="voyage-code">npm run db:up</code>
+            </li>
+            <li>
+              İlk kurulumda: <code className="voyage-code">npx prisma migrate deploy</code> ve{" "}
+              <code className="voyage-code">npm run db:seed</code>
+            </li>
+            <li>
+              <code className="voyage-code">.env</code> içindeki{" "}
+              <code className="voyage-code">DATABASE_URL</code> Docker için genelde{" "}
+              <code className="voyage-code">127.0.0.1:5433</code> kullanır.
+            </li>
+          </ol>
+          <button type="button" onClick={() => void load()} className="btn btn-primary">
+            Veritabanını başlattıktan sonra tekrar dene
+          </button>
+        </div>
+      )}
+      {message && <p className="voyage-alert voyage-alert--ok mb-16">{message}</p>}
 
       {data && !loading && (
         <>
           {!data.editable && (
-            <p className="mb-4 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm">
+            <p className="voyage-alert voyage-alert--warn mb-16">
               Bu tarih salt okunur: yalnızca <strong>bugünün</strong> kaydı girilebilir veya
               değiştirilebilir.
             </p>
           )}
 
           {data.items.length === 0 ? (
-            <p className="text-slate-600 text-sm border border-dashed border-slate-200 rounded-lg px-4 py-6 text-center">
+            <p className="voyage-empty">
               Veritabanında tanımlı et kalemi yok. Yönetici ürün listesini ekledikten sonra tablo burada
               görünür.
             </p>
           ) : (
-            <div className="space-y-8">
+            <div className="voyage-stack">
               {grouped.map(([title, items]) => (
                 <div key={title}>
-                  <h3
-                    className="text-lg font-semibold mb-3 pb-2 border-b"
-                    style={{ borderColor: "var(--tk-border)", color: "var(--tk-accent, #047857)" }}
-                  >
-                    {title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {items.map((it) => (
-                      <li
-                        key={it.meatItemId}
-                        className="grid gap-3 sm:grid-cols-[1fr_auto] items-start sm:items-center"
-                      >
-                        <label className="text-sm sm:text-base text-slate-800 leading-snug">
-                          {it.label}
-                          <span className="text-slate-500 font-normal"> (kg, tam sayı)</span>
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          autoComplete="off"
-                          disabled={!data.editable}
-                          value={values[it.meatItemId] ?? 0}
-                          onChange={(e) => onQtyChange(it.meatItemId, e.target.value)}
-                          className="w-full sm:w-28 border rounded-lg px-3 py-2 text-right font-mono disabled:bg-slate-100 disabled:text-slate-600"
-                        />
-                      </li>
-                    ))}
+                  <h3 className="voyage-section-title">{title}</h3>
+                  <ul className="voyage-stack" style={{ gap: 12, listStyle: "none", padding: 0 }}>
+                    {items.map((it) => {
+                      const qty = roundHalfKg(values[it.meatItemId] ?? 0);
+                      const canEdit = data.editable;
+                      return (
+                        <li key={it.meatItemId} className="voyage-row-input">
+                          <label
+                            className="form-label"
+                            style={{ color: "var(--text)", fontWeight: 500 }}
+                            id={`kg-label-${it.meatItemId}`}
+                          >
+                            {it.label}
+                            <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>
+                              {" "}
+                              (kg, 0,5 adım)
+                            </span>
+                          </label>
+                          <div
+                            className="voyage-kg-stepper"
+                            role="group"
+                            aria-labelledby={`kg-label-${it.meatItemId}`}
+                            aria-label={`${it.label} kilogram`}
+                          >
+                            <span className="voyage-kg-stepper__value" aria-live="polite">
+                              {formatKgDisplay(qty)}
+                            </span>
+                            <div className="voyage-kg-stepper__btns">
+                              <button
+                                type="button"
+                                className="voyage-kg-stepper__btn"
+                                aria-label="0,5 kg artır"
+                                disabled={!canEdit || qty >= MAX_KG}
+                                onClick={() => bumpKg(it.meatItemId, STEP_KG)}
+                              >
+                                ▲
+                              </button>
+                              <button
+                                type="button"
+                                className="voyage-kg-stepper__btn"
+                                aria-label="0,5 kg azalt"
+                                disabled={!canEdit || qty <= 0}
+                                onClick={() => bumpKg(it.meatItemId, -STEP_KG)}
+                              >
+                                ▼
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
@@ -275,13 +331,12 @@ export function ConsumptionPanel() {
           )}
 
           {data.editable && data.items.length > 0 && (
-            <div className="mt-8 flex gap-3">
+            <div className="form-actions" style={{ marginTop: 24, justifyContent: "flex-start" }}>
               <button
                 type="button"
                 disabled={saving}
                 onClick={() => void save()}
-                className="px-6 py-3 rounded-lg text-white font-semibold disabled:opacity-60"
-                style={{ background: "var(--tk-accent, #047857)" }}
+                className="btn btn-primary btn-lg"
               >
                 {saving ? "Kaydediliyor…" : "Kaydet"}
               </button>

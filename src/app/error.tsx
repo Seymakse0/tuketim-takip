@@ -14,20 +14,19 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">Bir sorun oluştu</h1>
-      <p className="text-slate-600 mb-6 max-w-md">
-        Sayfa yüklenirken beklenmeyen bir hata meydana geldi. Veritabanı bağlantısını veya ağ
-        bağlantınızı kontrol edip yeniden deneyin.
-      </p>
-      <button
-        type="button"
-        onClick={() => reset()}
-        className="rounded-lg px-4 py-2 text-white font-medium"
-        style={{ background: "var(--tk-accent, #047857)" }}
-      >
-        Yeniden dene
-      </button>
-    </main>
+    <div className="page-body page-body-wide" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+      <div className="card" style={{ maxWidth: 480, textAlign: "center" }}>
+        <h1 className="page-title" style={{ fontSize: 22, marginBottom: 12 }}>
+          Bir sorun oluştu
+        </h1>
+        <p className="voyage-muted mb-24">
+          Sayfa yüklenirken beklenmeyen bir hata meydana geldi. Veritabanı bağlantısını veya ağ
+          bağlantınızı kontrol edip yeniden deneyin.
+        </p>
+        <button type="button" onClick={() => reset()} className="btn btn-primary">
+          Yeniden dene
+        </button>
+      </div>
+    </div>
   );
 }

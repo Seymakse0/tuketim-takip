@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   try {
     const { from, to } = weekRangeContaining(anchor);
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
+    type MeatItemRow = (typeof meatItems)[number];
     const consumptions = await prisma.dailyConsumption.findMany({
       where: { date: { gte: from, lte: to } },
     });
@@ -36,13 +37,13 @@ export async function GET(req: NextRequest) {
       label: `${formatTr(from, "d MMM")} – ${formatTr(to, "d MMM yyyy")}`,
       from: format(from, "yyyy-MM-dd"),
       to: format(to, "yyyy-MM-dd"),
-      rows: meatItems.map((m) => ({
+      rows: meatItems.map((m: MeatItemRow) => ({
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
         label: m.label,
         quantityKg: sumByMeat.get(m.id) ?? 0,
       })),
-      totalKg: meatItems.reduce((s, m) => s + (sumByMeat.get(m.id) ?? 0), 0),
+      totalKg: meatItems.reduce((s: number, m: MeatItemRow) => s + (sumByMeat.get(m.id) ?? 0), 0),
     });
   } catch (e) {
     return prismaErrorResponse(e);

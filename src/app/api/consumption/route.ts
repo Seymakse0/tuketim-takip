@@ -4,12 +4,18 @@ import { prisma } from "@/lib/db";
 import { isDateEditable, parseDateOnly } from "@/lib/dates";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
+const halfKg = (n: number) => Math.round(n * 2) / 2;
+
 const postSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   items: z.array(
     z.object({
       meatItemId: z.string().min(1),
-      quantityKg: z.coerce.number().int().min(0),
+      quantityKg: z.coerce
+        .number()
+        .min(0)
+        .max(1_000_000)
+        .transform((n) => halfKg(n)),
     })
   ),
 });

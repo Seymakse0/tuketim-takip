@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   titleRow.height = 22;
 
   const header = sheet.getRow(3);
-  header.values = ["Kategori kodu", "Kategori", "Et türü", "kg (tam sayı)"];
+  header.values = ["Kategori kodu", "Kategori", "Et türü", "kg (0,5 adım)"];
   header.font = { bold: true };
   header.fill = {
     type: "pattern",
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     const row = sheet.getRow(r);
     const qty = byId.get(m.id) ?? 0;
     row.values = [m.categoryCode, m.categoryName, m.label, qty];
-    row.getCell(4).numFmt = "0";
+    row.getCell(4).numFmt = "0.0";
     row.alignment = { vertical: "top", wrapText: true };
     const labelLen = m.label.length;
     row.height = Math.max(18, Math.ceil(labelLen / 55) * 15);
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   totalRow.getCell(3).value = "TOPLAM";
   totalRow.getCell(3).font = { bold: true };
   totalRow.getCell(4).value = total;
-  totalRow.getCell(4).numFmt = "0";
+  totalRow.getCell(4).numFmt = "0.0";
   totalRow.font = { bold: true };
 
   sheet.columns = [

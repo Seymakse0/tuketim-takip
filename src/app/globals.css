@@ -2,15 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Otelin ortak CSS dosyası yüklendiyse bu değişkenlerle ince ayar yapılabilir */
-:root {
-  --tk-surface: #f8fafc;
-  --tk-card: #ffffff;
-  --tk-border: #e2e8f0;
-  --tk-accent: #047857;
-}
+@import "../styles/voyage-design-system.css";
 
-body {
-  background: var(--tk-surface);
-  color: #0f172a;
+/* Eski bileşenlerde kalan tk-* referansları → Voyage tokens */
+:root {
+  --tk-surface: var(--bg);
+  --tk-card: var(--surface);
+  --tk-border: var(--border);
+  --tk-accent: var(--gold);
 }

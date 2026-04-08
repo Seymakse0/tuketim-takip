@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { VoyageShell } from "@/components/VoyageShell";
 
 export const metadata: Metadata = {
   title: "Et tüketim kontrolü",
   description: "Mutfak günlük et tüketimi girişi ve raporlar",
+  icons: {
+    icon: "/icon",
+  },
 };
 
 export default function RootLayout({
@@ -18,7 +22,9 @@ export default function RootLayout({
       <head>
         {hotelCssUrl ? <link rel="stylesheet" href={hotelCssUrl} /> : null}
       </head>
-      <body className="antialiased min-h-screen">{children}</body>
+      <body className="antialiased">
+        <VoyageShell>{children}</VoyageShell>
+      </body>
     </html>
   );
 }

@@ -22,7 +22,7 @@ model DailyConsumption {
   id         String   @id @default(cuid())
   date       DateTime @db.Date
   meatItemId String   @map("meat_item_id")
-  quantityKg Int      @map("quantity_kg")
+  quantityKg Float   @map("quantity_kg")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
