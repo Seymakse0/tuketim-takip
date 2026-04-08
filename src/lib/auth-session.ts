@@ -32,7 +32,9 @@ async function hmacSha256Hex(secret: string, messageBytes: Uint8Array): Promise<
     false,
     ["sign"]
   );
-  const sig = await crypto.subtle.sign("HMAC", key, messageBytes);
+  const payload = new Uint8Array(messageBytes.byteLength);
+  payload.set(messageBytes);
+  const sig = await crypto.subtle.sign("HMAC", key, payload);
   return bufToHex(sig);
 }
 
