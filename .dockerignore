@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.git
+.vscode
+*.md
+.env
+.env.*
+npm-debug.log*
+.DS_Store
+*.pem
