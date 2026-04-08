@@ -148,13 +148,35 @@ npm run start      # varsayılan http://0.0.0.0:3000
 
 **Özet:** Evet, GitHub’dan sunucuya çekip `~/tuketim-takip` içinde **Docker kullanmadan** çalıştırabilirsiniz; tek şart sunucuda çalışan bir PostgreSQL ve doğru `DATABASE_URL`.
 
-### Üretim örneği: `https://follow.voyagestars.com` (sunucu `194.62.54.157`, ayrı konteyner)
+### Geliştirici makinesi → Git (Bu repo başka, `otel-mudur-takip` dosya listesi kullanılmaz)
 
-Bu site, aynı makinedeki diğer `voyagestars.com` sitelerinden **bağımsız bir Docker Compose yığını** olarak çalışabilir. Dışarıya doğrudan port açmak yerine uygulama **yalnızca `127.0.0.1:3005`** üzerinden dinler; sunucudaki **Nginx** (veya benzeri) `follow.voyagestars.com` isteğini buraya yönlendirir.
+Commit edeceğiniz yollar örneğin `src/`, `prisma/`, `package.json`, `Dockerfile`, `docker-compose*.yml`, `deploy/` olur. Örnek:
+
+```bash
+git status
+git add src prisma package.json package-lock.json docker-compose.production.yml Dockerfile deploy
+git commit -m "Açıklama"
+git push origin main   # veya kullandığınız dal
+```
+
+### Üretim örneği: `https://kitchen.voyagestars.com` (ör. sunucu `194.62.54.157`, ayrı konteyner)
+
+**Tarayıcıdan bu projeyi açmak:** Uygulama içinde `kitchen.voyagestars.com` yazmanız gerekmez; domain tamamen **Cloudflare DNS + sunucuda Docker + Nginx** ile bağlanır. Aşağıdaki sırayı eksiksiz yapın; biri eksikse adres ya açılmaz ya da başka site (ör. `gate`) görünür.
+
+| Sıra | Yapılacak |
+|------|-----------|
+| 1 | Cloudflare’da `kitchen` **A** kaydı sunucu IP’nize; `kitchen` → `gate` gibi **Redirect Rule** yok. |
+| 2 | Sunucuda repo + `.env` → `./deploy/server-first-install.sh` (veya README’deki `docker compose` komutları). |
+| 3 | Sunucuda test: `curl -sI http://127.0.0.1:3005` → uygulama ayaktayken `HTTP/1.1 200`, `307` veya `401/302` gibi anlamlı cevap (bağlantı reddi olmamalı). |
+| 4 | Nginx: `./deploy/install-kitchen-nginx.sh` veya `deploy/nginx-kitchen.voyagestars.com.example.conf` elle kopyala; **sites-enabled**’da aktif; `server_name` yalnızca `kitchen.voyagestars.com`; `proxy_pass` → `http://127.0.0.1:3005`. |
+| 5 | HTTPS sertifikası bu hostname için (certbot veya wildcard) Nginx’te tanımlı. |
+| 6 | Tarayıcıda `https://kitchen.voyagestars.com` — giriş sayfası bu uygulamanın `/login` akışı olmalı. |
+
+Bu site, aynı makinedeki diğer `voyagestars.com` sitelerinden (ör. `gate.voyagestars.com`) **bağımsız bir Docker Compose yığını** olarak çalışır. Dışarıya doğrudan port açmak yerine uygulama **yalnızca `127.0.0.1:3005`** üzerinden dinler; sunucudaki **Nginx** yalnızca **`kitchen.voyagestars.com`** için `proxy_pass` ile buraya yönlendirir. `kitchen` için ayrı `server_name` bloğu yoksa istekler başka sitenin `default_server` bloğuna düşebilir (ikisi de aynı siteyi gösterir).
 
 **1) DNS**
 
-- `follow.voyagestars.com` için **A** kaydı → `194.62.54.157` (TTL yayına göre).
+- `kitchen.voyagestars.com` için **A** kaydı → sunucu IPv4 (ör. `194.62.54.157`). Cloudflare’da `kitchen`’i `gate`’e yönlendiren **Redirect Rule** olmamalı.
 
 **2) Sunucuda proje**
 
@@ -179,10 +201,11 @@ docker compose -f docker-compose.production.yml up -d app
 
 **4) HTTPS ve domain (host Nginx)**
 
-Repoda örnek yapılandırma: `deploy/nginx-follow.voyagestars.com.example.conf`
+Repoda örnek yapılandırma: **`deploy/nginx-kitchen.voyagestars.com.example.conf`** (başka alt alan için aynı kalıp: `deploy/nginx-follow.voyagestars.com.example.conf`).
 
-- Sertifika: örn. `sudo certbot certonly --nginx -d follow.voyagestars.com` (veya elinizdeki wildcard sertifikayı kullanın).
-- `proxy_pass http://127.0.0.1:3005;` satırı bu projenin konteynerine gider; diğer siteler kendi `server_name` ve kendi upstream portlarında kalır.
+- Sertifika: örn. `sudo certbot certonly --nginx -d kitchen.voyagestars.com` (veya elinizdeki wildcard sertifikayı kullanın).
+- Hızlı kurulum (sunucuda, sites-available / sites-enabled): `chmod +x deploy/install-kitchen-nginx.sh && ./deploy/install-kitchen-nginx.sh`
+- `proxy_pass http://127.0.0.1:3005;` yalnızca **`server_name kitchen.voyagestars.com;`** bloğunda olmalı; `gate` ve diğer alt alanlar kendi dosyalarında kendi `proxy_pass` portlarına gider.
 
 **5) Güncelleme**
 
@@ -193,14 +216,24 @@ docker compose -f docker-compose.production.yml build app
 docker compose -f docker-compose.production.yml up -d app
 ```
 
-Veritabanı şeması değiştiyse (yeni migration): geçici olarak `setup` profilinde yalnızca migrate çalıştırmak gerekir; canlıda seed kullanmadan `npx prisma migrate deploy` eşdeğerini operasyon ekibinizle netleştirin.
+Aynı akışı tek komutta (sunucuda, Linux): önce betiklere çalıştırma izni verin:
+
+```bash
+chmod +x deploy/server-first-install.sh deploy/server-update.sh deploy/install-kitchen-nginx.sh
+```
+
+- **İlk kurulum:** `./deploy/server-first-install.sh` (içeride: `up -d db` → `setup` → `up -d app`)
+- **Kod güncellemesi** (`gate.voyagestars.com` için yaptığınız `git pull` + `build` + `up` eşdeğeri): `./deploy/server-update.sh`
+- Tam temiz imaj: `NO_CACHE=1 ./deploy/server-update.sh`
+
+Veritabanı şeması değiştiyse (yeni migration): `setup` tekrar çalıştırmadan, yalnızca migrate için operasyon ekibi konteyner veya geçici `run` ile `npx prisma migrate deploy` çalıştırmalıdır (`setup` seed de çalıştırır).
 
 **Özet mimari**
 
 | Katman | Görev |
 |--------|--------|
-| DNS | `follow.voyagestars.com` → `194.62.54.157` |
-| Nginx (host, 443) | TLS sonlandırma, `proxy_pass` → `127.0.0.1:3005` |
+| DNS | `kitchen.voyagestars.com` → sunucu IP |
+| Nginx (host, 443) | Sadece `kitchen` için TLS + `proxy_pass` → `127.0.0.1:3005` |
 | Docker `app` | Next.js (bu repo `Dockerfile`) |
 | Docker `db` | PostgreSQL, **dışarıya port açılmaz**; yalnızca compose ağı |
 
