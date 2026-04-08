@@ -47,6 +47,8 @@ services:
     environment:
       DATABASE_URL: postgresql://tuketim:${POSTGRES_PASSWORD}@db:5432/tuketim_kontrol?schema=public
       APP_TIMEZONE: Europe/Istanbul
+      APP_AUTH_SECRET: ${APP_AUTH_SECRET:?APP_AUTH_SECRET .env içinde tanımlı olmalı (openssl rand -hex 32)}
+      APP_AUTH_USERS: ${APP_AUTH_USERS:?APP_AUTH_USERS .env içinde tanımlı olmalı (örn. kullanici:sifre|diger:pass)}
     depends_on:
       db:
         condition: service_healthy

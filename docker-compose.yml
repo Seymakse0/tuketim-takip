@@ -17,6 +17,8 @@ services:
     environment:
       DATABASE_URL: postgresql://tuketim:tuketim@db:5432/tuketim_kontrol?schema=public
       APP_TIMEZONE: Europe/Istanbul
+      APP_AUTH_SECRET: ${APP_AUTH_SECRET:-tuketim_dev_change_me_minimum_thirty_two_chars_long}
+      APP_AUTH_USERS: ${APP_AUTH_USERS:-mutfak:mutfak123}
     depends_on:
       - db
 
