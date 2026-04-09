@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:up": "docker compose up -d db",
     "db:seed": "tsx prisma/seed.ts",
+    "db:add-dallas-steak": "tsx prisma/add-dallas-steak.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
