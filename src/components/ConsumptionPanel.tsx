@@ -17,7 +17,6 @@ type ConsumptionResponse = {
 };
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
-const STEP_KG = 0.5;
 const MAX_KG = 1_000_000;
 
 function todayInputValue() {
@@ -32,9 +31,30 @@ function roundHalfKg(n: number): number {
   return Math.round(n * 2) / 2;
 }
 
-function formatKgDisplay(n: number): string {
+/** Gösterim / taslak: binlik ayırıcı yok; ondalık virgül. */
+function kgToDraftString(n: number): string {
   const r = roundHalfKg(n);
-  return r.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  if (r % 1 === 0) return String(Math.round(r));
+  return r.toFixed(1).replace(".", ",");
+}
+
+function sanitizeKgInput(s: string): string {
+  let s2 = s.replace(/[^0-9,]/g, "");
+  if (s2.startsWith(",")) s2 = `0${s2}`;
+  const fc = s2.indexOf(",");
+  if (fc === -1) return s2;
+  const left = s2.slice(0, fc).replace(/,/g, "");
+  const right = s2.slice(fc + 1).replace(/,/g, "");
+  return `${left},${right}`;
+}
+
+function parseKgDraft(s: string): number {
+  const t = s.trim();
+  if (t === "" || t === ",") return 0;
+  const normalized = t.replace(",", ".");
+  const n = Number.parseFloat(normalized);
+  if (Number.isNaN(n)) return 0;
+  return roundHalfKg(Math.max(0, Math.min(MAX_KG, n)));
 }
 
 async function readJsonResponse(res: Response): Promise<Record<string, unknown>> {
@@ -51,7 +71,7 @@ export function ConsumptionPanel() {
   const [date, setDate] = useState(todayInputValue);
   const [historyDraft, setHistoryDraft] = useState(todayInputValue);
   const [data, setData] = useState<ConsumptionResponse | null>(null);
-  const [values, setValues] = useState<Record<string, number>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -77,11 +97,11 @@ export function ConsumptionPanel() {
       }
       if (!res.ok) throw new Error((json.error as string) || "Veriler yüklenemedi.");
       setData(json as unknown as ConsumptionResponse);
-      const next: Record<string, number> = {};
+      const next: Record<string, string> = {};
       for (const it of (json.items as ItemRow[]) ?? []) {
-        next[it.meatItemId] = roundHalfKg(it.quantityKg);
+        next[it.meatItemId] = kgToDraftString(it.quantityKg);
       }
-      setValues(next);
+      setDrafts(next);
     } catch (e) {
       setData(null);
       setError(e instanceof Error ? e.message : "Beklenmeyen bir hata oluştu.");
@@ -105,12 +125,15 @@ export function ConsumptionPanel() {
     return Array.from(map.entries());
   }, [data]);
 
-  const bumpKg = (id: string, delta: number) => {
-    setValues((v) => {
-      const cur = roundHalfKg(v[id] ?? 0);
-      let next = roundHalfKg(cur + delta);
-      next = Math.max(0, Math.min(MAX_KG, next));
-      return { ...v, [id]: next };
+  const setDraft = (id: string, raw: string) => {
+    setDrafts((d) => ({ ...d, [id]: sanitizeKgInput(raw) }));
+  };
+
+  const normalizeDraftOnBlur = (id: string) => {
+    setDrafts((d) => {
+      const cur = d[id] ?? "";
+      const n = parseKgDraft(cur);
+      return { ...d, [id]: kgToDraftString(n) };
     });
   };
 
@@ -122,7 +145,7 @@ export function ConsumptionPanel() {
     try {
       const items = data.items.map((it) => ({
         meatItemId: it.meatItemId,
-        quantityKg: roundHalfKg(values[it.meatItemId] ?? 0),
+        quantityKg: parseKgDraft(drafts[it.meatItemId] ?? ""),
       }));
       const res = await fetch("/api/consumption", {
         method: "POST",
@@ -166,17 +189,17 @@ export function ConsumptionPanel() {
       </div>
 
       <p className="voyage-muted mb-16">
-        Her et için <strong>kilogram</strong> değerini sağdaki{" "}
-        <strong>▲ / ▼</strong> oklarıyla <strong>0,5 kg</strong> adımlarla ayarlayın.{" "}
-        <strong>Kaydet</strong> ile kaydedin. Geçmiş gün için alttaki{" "}
+        Her et için <strong>kilogram</strong> değerini kutuya yazın (yalnızca rakam ve virgül; ondalık
+        ayırıcı virgüldür). Kayıtlar <strong>0,5 kg</strong> adımlarına yuvarlanır.{" "}
+        <strong>Kaydet</strong> ile kaydedin. Başka bir gün için alttaki{" "}
         <strong>«Başka bir gün seç»</strong> bölümünü kullanın.
       </p>
 
       <div className="mb-16" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         {viewingToday ? (
-          <span className="badge badge-green">Bugün ({today}) — kayıt girebilirsiniz</span>
+          <span className="badge badge-green">Bugün ({today})</span>
         ) : (
-          <span className="badge badge-gray">Seçili gün: {date}</span>
+          <span className="badge badge-gray">Seçili gün: {date} — düzenleyebilirsiniz</span>
         )}
         {!viewingToday && (
           <button type="button" onClick={goToToday} className="btn btn-ghost btn-sm">
@@ -186,7 +209,7 @@ export function ConsumptionPanel() {
       </div>
 
       <details className="voyage-details">
-        <summary>Başka bir gün seç (salt okunur, Excel)</summary>
+        <summary>Başka bir gün seç</summary>
         <div
           style={{
             marginTop: 16,
@@ -257,13 +280,6 @@ export function ConsumptionPanel() {
 
       {data && !loading && (
         <>
-          {!data.editable && (
-            <p className="voyage-alert voyage-alert--warn mb-16">
-              Bu tarih salt okunur: yalnızca <strong>bugünün</strong> kaydı girilebilir veya
-              değiştirilebilir.
-            </p>
-          )}
-
           {data.items.length === 0 ? (
             <p className="voyage-empty">
               Veritabanında tanımlı et kalemi yok. Yönetici ürün listesini ekledikten sonra tablo burada
@@ -276,51 +292,39 @@ export function ConsumptionPanel() {
                   <h3 className="voyage-section-title">{title}</h3>
                   <ul className="voyage-stack" style={{ gap: 12, listStyle: "none", padding: 0 }}>
                     {items.map((it) => {
-                      const qty = roundHalfKg(values[it.meatItemId] ?? 0);
                       const canEdit = data.editable;
+                      const draft = drafts[it.meatItemId] ?? "";
                       return (
                         <li key={it.meatItemId} className="voyage-row-input">
                           <label
                             className="form-label"
                             style={{ color: "var(--text)", fontWeight: 500 }}
+                            htmlFor={`kg-input-${it.meatItemId}`}
                             id={`kg-label-${it.meatItemId}`}
                           >
                             {it.label}
-                            <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>
-                              {" "}
-                              (kg, 0,5 adım)
-                            </span>
+                            <span style={{ color: "var(--text-dim)", fontWeight: 400 }}> (kg)</span>
                           </label>
-                          <div
-                            className="voyage-kg-stepper"
-                            role="group"
+                          <input
+                            id={`kg-input-${it.meatItemId}`}
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            className="voyage-kg-input"
+                            disabled={!canEdit}
                             aria-labelledby={`kg-label-${it.meatItemId}`}
-                            aria-label={`${it.label} kilogram`}
-                          >
-                            <span className="voyage-kg-stepper__value" aria-live="polite">
-                              {formatKgDisplay(qty)}
-                            </span>
-                            <div className="voyage-kg-stepper__btns">
-                              <button
-                                type="button"
-                                className="voyage-kg-stepper__btn"
-                                aria-label="0,5 kg artır"
-                                disabled={!canEdit || qty >= MAX_KG}
-                                onClick={() => bumpKg(it.meatItemId, STEP_KG)}
-                              >
-                                ▲
-                              </button>
-                              <button
-                                type="button"
-                                className="voyage-kg-stepper__btn"
-                                aria-label="0,5 kg azalt"
-                                disabled={!canEdit || qty <= 0}
-                                onClick={() => bumpKg(it.meatItemId, -STEP_KG)}
-                              >
-                                ▼
-                              </button>
-                            </div>
-                          </div>
+                            value={draft}
+                            onChange={(e) => setDraft(it.meatItemId, e.target.value)}
+                            onBlur={() => normalizeDraftOnBlur(it.meatItemId)}
+                            onPaste={(e) => {
+                              e.preventDefault();
+                              const t = e.clipboardData.getData("text");
+                              setDrafts((d) => {
+                                const cur = d[it.meatItemId] ?? "";
+                                return { ...d, [it.meatItemId]: sanitizeKgInput(cur + t) };
+                              });
+                            }}
+                          />
                         </li>
                       );
                     })}

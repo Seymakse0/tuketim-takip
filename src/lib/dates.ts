@@ -43,9 +43,9 @@ export function parseDateOnly(iso: string): Date {
   return startOfDay(dt);
 }
 
-/** Sadece bugünün kaydı girilebilir / güncellenir; dün ve ileri tarihler düzenlenemez. */
-export function isDateEditable(entryDate: Date): boolean {
-  return dateToYmd(entryDate) === todayYmd();
+/** Geçmiş günler dahil tüm takvim tarihlerinde kayıt girilebilir / güncellenir. */
+export function isDateEditable(_entryDate: Date): boolean {
+  return true;
 }
 
 export function dayRange(date: Date) {

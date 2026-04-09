@@ -19,6 +19,7 @@ services:
       APP_TIMEZONE: Europe/Istanbul
       APP_AUTH_SECRET: ${APP_AUTH_SECRET:-tuketim_dev_change_me_minimum_thirty_two_chars_long}
       APP_AUTH_USERS: ${APP_AUTH_USERS:-mutfak:mutfak123}
+      APP_AUTH_USERS_JSON: ${APP_AUTH_USERS_JSON:-}
     depends_on:
       - db
 

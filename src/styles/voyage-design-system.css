@@ -520,62 +520,6 @@ body.no-sidebar #main {
   font-variant-numeric: tabular-nums;
 }
 
-/* 0,5 kg — oklarla artır/azalt, elle yazı yok */
-.voyage-kg-stepper {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  overflow: hidden;
-  max-width: 132px;
-  flex-shrink: 0;
-}
-
-.voyage-kg-stepper__value {
-  min-width: 52px;
-  padding: 8px 10px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  border-right: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.voyage-kg-stepper__btns {
-  display: flex;
-  flex-direction: column;
-  min-width: 36px;
-}
-
-.voyage-kg-stepper__btn {
-  flex: 1;
-  min-height: 22px;
-  border: none;
-  background: var(--surface2);
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 11px;
-  line-height: 1;
-  padding: 0 6px;
-  transition: background 0.12s, color 0.12s;
-}
-.voyage-kg-stepper__btn:hover:not(:disabled) {
-  background: var(--gold-bg);
-  color: var(--gold);
-}
-.voyage-kg-stepper__btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-.voyage-kg-stepper__btn + .voyage-kg-stepper__btn {
-  border-top: 1px solid var(--border);
-}
-
 .voyage-section-title {
   font-family: var(--font-serif);
   font-size: 15px;
