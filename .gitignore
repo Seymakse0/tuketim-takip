@@ -1,7 +1,8 @@
 node_modules
-# Tüm .next yok say; yalnızca rota tip dosyasını takip et (temiz klon + tsc)
+# .next — yalnızca routes.d.ts izlensin (Next build çıktısının tamamı repoya girmesin)
 .next/*
 !.next/types/
+.next/types/*
 !.next/types/routes.d.ts
 out
 .env
