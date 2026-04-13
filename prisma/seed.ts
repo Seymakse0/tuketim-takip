@@ -1,5 +1,4 @@
-// Üretilen istemci (IDE/tsserver için güvenilir yol)
-import { PrismaClient } from "../node_modules/.prisma/client/index.js";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

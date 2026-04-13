@@ -47,9 +47,8 @@ function fmtKg(n: number): string {
 }
 
 export default function RaporTabloPage() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const [data, setData] = useState<GridPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,9 +75,9 @@ export default function RaporTabloPage() {
   }, [load]);
 
   const yearOptions = useMemo(() => {
-    const y0 = now.getFullYear();
+    const y0 = new Date().getFullYear();
     return Array.from({ length: 7 }, (_, i) => y0 - 3 + i);
-  }, [now]);
+  }, []);
 
   const colTotals = useMemo(() => {
     if (!data) return null;

@@ -44,7 +44,8 @@ export function parseDateOnly(iso: string): Date {
 }
 
 /** Geçmiş günler dahil tüm takvim tarihlerinde kayıt girilebilir / güncellenir. */
-export function isDateEditable(_entryDate: Date): boolean {
+export function isDateEditable(entryDate: Date): boolean {
+  void entryDate;
   return true;
 }
 
