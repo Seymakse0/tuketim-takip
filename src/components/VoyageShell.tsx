@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { SectionJumpLink } from "@/components/SectionJumpLink";
 
 export function VoyageShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -34,9 +36,12 @@ export function VoyageShell({ children }: { children: ReactNode }) {
           <SectionJumpLink sectionId="gecmis-ve-raporlar" className="nav-item">
             Geçmiş ve raporlar
           </SectionJumpLink>
-          <SectionJumpLink sectionId="raporlar" className="nav-item">
+          <Link
+            href="/rapor-tablo"
+            className={`nav-item${pathname === "/rapor-tablo" ? " active" : ""}`}
+          >
             Rapor tablosu
-          </SectionJumpLink>
+          </Link>
         </nav>
         <div className="sidebar-footer">
           <button type="button" className="nav-item" onClick={() => void logout()}>

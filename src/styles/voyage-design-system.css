@@ -624,3 +624,193 @@ body.no-sidebar #main {
   border-top: 1px solid var(--border);
   margin-top: auto;
 }
+
+/* Aylık rapor tablosu — sayfa gövdesi kaymasın; kaydırma sadece tablo alanında */
+body:has(.rapor-tablo-layout-root) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body:has(.rapor-tablo-layout-root) #main {
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rapor-tablo-layout-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rapor-tablo-viewport {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.rapor-tablo-header {
+  flex-shrink: 0;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rapor-tablo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.rapor-tablo-inline-link {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+.rapor-tablo-inline-link:hover {
+  text-decoration: underline;
+}
+
+.rapor-tablo-banner {
+  flex-shrink: 0;
+  margin: 0 28px 12px;
+}
+
+.rapor-tablo-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 28px 24px;
+}
+
+.rapor-tablo-caption {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.rapor-tablo-table-wrap {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+table.rapor-tablo-grid {
+  width: max-content;
+  min-width: 100%;
+  font-size: 12px;
+}
+
+.rapor-tablo-grid th,
+.rapor-tablo-grid td {
+  padding: 6px 8px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.rapor-tablo-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface2);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+.rapor-tablo-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+.rapor-tablo-sticky-col2 {
+  position: sticky;
+  left: 40px;
+  z-index: 3;
+  min-width: 92px;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+.rapor-tablo-grid thead .rapor-tablo-sticky-col,
+.rapor-tablo-grid thead .rapor-tablo-sticky-col2 {
+  z-index: 4;
+  background: var(--surface2);
+}
+
+.rapor-tablo-meat-head {
+  max-width: 120px;
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+
+.rapor-tablo-meat-code {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+
+.rapor-tablo-meat-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.rapor-tablo-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rapor-tablo-total-col {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: var(--surface);
+  box-shadow: -1px 0 0 var(--border);
+  font-weight: 600;
+}
+
+.rapor-tablo-grid thead .rapor-tablo-total-col {
+  z-index: 4;
+  background: var(--surface2);
+}
+
+.rapor-tablo-grid tfoot td {
+  border-top: 2px solid var(--border);
+  background: var(--gold-bg);
+}
+
+.rapor-tablo-grid tfoot .rapor-tablo-sticky-col,
+.rapor-tablo-grid tfoot .rapor-tablo-sticky-col2 {
+  background: var(--gold-bg);
+  z-index: 3;
+}
+
+.rapor-tablo-grid tfoot .rapor-tablo-total-col {
+  background: var(--gold-bg);
+}
