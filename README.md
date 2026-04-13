@@ -195,6 +195,8 @@ git push origin main   # veya kullandığınız dal
 | 5 | HTTPS sertifikası bu hostname için (certbot veya wildcard) Nginx’te tanımlı. |
 | 6 | Tarayıcıda `https://kitchen.voyagestars.com` — giriş sayfası bu uygulamanın `/login` akışı olmalı. |
 
+**502 Bad Gateway:** Nginx çalışıyor ama **arka uç yok** demektir — genelde Docker `app` konteyneri düşmüş veya hiç başlamamış. Sunucuda (proje kökünde): `chmod +x deploy/diagnose-502.sh && ./deploy/diagnose-502.sh`. Ardından `docker compose -f docker-compose.production.yml up -d db && ... build app && ... up -d app` ve `curl -sI http://127.0.0.1:3005/health` → `200` olmalı. Cloudflare kullanıyorsanız DNS bu sunucuyu göstermeli; **Origin Down** da 5xx üretebilir.
+
 Bu site, aynı makinedeki diğer `voyagestars.com` sitelerinden (ör. `gate.voyagestars.com`) **bağımsız bir Docker Compose yığını** olarak çalışır. Dışarıya doğrudan port açmak yerine uygulama **yalnızca `127.0.0.1:3005`** üzerinden dinler; sunucudaki **Nginx** yalnızca **`kitchen.voyagestars.com`** için `proxy_pass` ile buraya yönlendirir. `kitchen` için ayrı `server_name` bloğu yoksa istekler başka sitenin `default_server` bloğuna düşebilir (ikisi de aynı siteyi gösterir).
 
 **1) DNS**
