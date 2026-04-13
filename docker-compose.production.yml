@@ -1,0 +1,62 @@
+# Üretim: aynı sunucudaki diğer sitelerden ayrı yığın.
+# Uygulama yalnızca 127.0.0.1:3005 üzerinden erişilir; Nginx/Caddy (host) HTTPS ve domain yönlendirir.
+#
+# .env dosyasında en az: POSTGRES_PASSWORD=güçlü_bir_şifre
+#
+# İlk kurulum:
+#   docker compose -f docker-compose.production.yml up -d db
+#   docker compose -f docker-compose.production.yml --profile setup run --rm setup
+#   docker compose -f docker-compose.production.yml up -d app
+#
+# Güncelleme: git pull, docker compose -f docker-compose.production.yml build app && ... up -d app
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tuketim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env içinde tanımlı olmalı}
+      POSTGRES_DB: tuketim_kontrol
+    volumes:
+      - pgdata_tuketim:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tuketim -d tuketim_kontrol"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  setup:
+    profiles: [setup]
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "npm ci && npx prisma migrate deploy && npm run db:seed"
+    environment:
+      DATABASE_URL: postgresql://tuketim:${POSTGRES_PASSWORD}@db:5432/tuketim_kontrol?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3005:3000"
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: tuketim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env içinde tanımlı olmalı}
+      POSTGRES_DB: tuketim_kontrol
+      APP_TIMEZONE: Europe/Istanbul
+      APP_AUTH_SECRET: ${APP_AUTH_SECRET:?APP_AUTH_SECRET .env içinde tanımlı olmalı (openssl rand -hex 32)}
+      APP_AUTH_USERS: ${APP_AUTH_USERS:?APP_AUTH_USERS .env içinde tanımlı olmalı (örn. kullanici:sifre|diger:pass)}
+      APP_AUTH_USERS_JSON: ${APP_AUTH_USERS_JSON:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata_tuketim:

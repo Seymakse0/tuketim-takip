@@ -1,0 +1,45 @@
+{
+  "name": "tuketim-kontrol",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "node ./node_modules/prisma/build/index.js migrate deploy",
+    "db:up": "docker compose up -d db",
+    "db:seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts",
+    "db:add-dallas-steak": "node ./node_modules/tsx/dist/cli.mjs prisma/add-dallas-steak.ts",
+    "db:add-dallas-docker": "bash deploy/add-dallas-via-docker-db.sh",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "prisma": "^6.5.0",
+    "@prisma/client": "^6.5.0",
+    "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
+    "next": "^15.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.2",
+    "tsx": "^4.19.3"
+  },
+  "prisma": {
+    "seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "eslint": "^9.22.0",
+    "eslint-config-next": "^15.2.4",
+    "postcss": "^8.5.3",
+    "autoprefixer": "^10.4.20",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.2"
+  }
+}

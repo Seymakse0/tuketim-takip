@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../styles/voyage-design-system.css";
+
+/* Eski bileşenlerde kalan tk-* referansları → Voyage tokens */
+:root {
+  --tk-surface: var(--bg);
+  --tk-card: var(--surface);
+  --tk-border: var(--border);
+  --tk-accent: var(--gold);
+}
