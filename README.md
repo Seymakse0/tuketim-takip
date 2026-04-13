@@ -95,11 +95,20 @@ npm run dev
 
 Tam yığın için `docker-compose.yml` içindeki `app` servisini kullanmadan önce veritabanında `prisma migrate deploy` ve seed çalıştırın (otel sunucusunda genelde ayrı bir migrate adımı kullanılır).
 
+**Sunucuda `app` konteyneri ayaktayken** (güncel Docker imajı gerekir) şema ve seed için:
+
+```bash
+docker compose exec app prisma migrate deploy
+docker compose exec app npm run db:seed
+```
+
+Konteyner içinde **`npx prisma ...` kullanmayın** — `npx` Prisma 7 indirip şema ile uyumsuz hata verebilir; proje Prisma 6 kullanır.
+
 ## Otel sunucusu ve GitHub
 
 1. Bu klasörde `git init`, ardından GitHub’da yeni repo oluşturup `git remote add` / `git push`.
 2. PostgreSQL’de bir veritabanı ve kullanıcı açın; `DATABASE_URL`’i uygulamaya (`.env`) verin.
-3. Deploy sırasında: `npx prisma migrate deploy` ve **bir kez** `npm run db:seed` (et kalemleri için).
+3. Deploy sırasında: `prisma migrate deploy` ve **bir kez** `npm run db:seed` (et kalemleri için); Docker’da yukarıdaki `docker compose exec app ...` komutlarını kullanın.
 4. Ortak domain: **alt alan adı** (ör. `tuketim.otel.com`) ile reverse proxy (Nginx vb.); isteğe bağlı `NEXT_PUBLIC_HOTEL_CSS_URL`.
 5. Alt dizinde yayın (`/tuketim`) gerekiyorsa Next.js `basePath` eklenmeli; altyapı ekibinizle netleştirin.
 
