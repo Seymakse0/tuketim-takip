@@ -1,5 +1,8 @@
 node_modules
-.next
+# Tüm .next yok say; yalnızca rota tip dosyasını takip et (temiz klon + tsc)
+.next/*
+!.next/types/
+!.next/types/routes.d.ts
 out
 .env
 .env.local

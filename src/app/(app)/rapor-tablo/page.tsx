@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReportPanel } from "@/components/ReportPanel";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { format, parseISO } from "date-fns";
-import { tr } from "date-fns/locale";
 
 type MeatCol = {
   id: string;
@@ -99,25 +99,43 @@ export default function RaporTabloPage() {
   }, [data]);
 
   return (
-    <div className="rapor-tablo-viewport">
+    <div className="rapor-tablo-viewport page-body page-body-wide voyage-stack">
       <header className="rapor-tablo-header">
         <div>
-          <h1 className="page-title">Aylık tüketim tablosu</h1>
+          <h1 className="page-title">Rapor tablosu</h1>
           <p className="page-sub">
-            Ay seçildiğinde o aya ait tüm günlük kayıtlar ızgarada gösterilir. Ana sayfaya{" "}
+            Özet rapor için günlük, haftalık veya aylık seçip tarih belirleyin. Aşağıda seçilen aya göre gün
+            bazlı detay ızgarası yer alır. Ana sayfaya{" "}
             <Link href="/" className="rapor-tablo-inline-link">
               dön
             </Link>
             .
           </p>
         </div>
-        <div className="rapor-tablo-toolbar">
+      </header>
+
+      <section className="card scroll-mt-6" aria-labelledby="raporlar-baslik">
+        <ReportPanel />
+      </section>
+
+      <section className="rapor-tablo-monthly-block" aria-labelledby="aylik-detay-baslik">
+        <h2 id="aylik-detay-baslik" className="card-title" style={{ marginBottom: 12 }}>
+          Aylık günlük detay tablosu
+        </h2>
+        <p className="voyage-muted mb-16">
+          Ay ve yıl seçildiğinde o döneme ait günlük kayıtlar et türleri sütunlarında listelenir.
+        </p>
+        <div className="rapor-tablo-toolbar mb-16" style={{ flexWrap: "wrap" }}>
           <div className="form-group" style={{ minWidth: 120 }}>
             <label htmlFor="rt-yil" className="form-label">
               Yıl
             </label>
-            <select id="rt-yil" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-              {yearOptions.map((y) => (
+            <select
+              id="rt-yil"
+              value={year}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))}
+            >
+              {yearOptions.map((y: number) => (
                 <option key={y} value={y}>
                   {y}
                 </option>
@@ -128,7 +146,11 @@ export default function RaporTabloPage() {
             <label htmlFor="rt-ay" className="form-label">
               Ay
             </label>
-            <select id="rt-ay" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+            <select
+              id="rt-ay"
+              value={month}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setMonth(Number(e.target.value))}
+            >
               {MONTH_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -140,7 +162,7 @@ export default function RaporTabloPage() {
             {loading ? "Yükleniyor…" : "Yenile"}
           </button>
         </div>
-      </header>
+      </section>
 
       {error ? (
         <p className="voyage-alert voyage-alert--error rapor-tablo-banner" role="alert">
@@ -161,7 +183,7 @@ export default function RaporTabloPage() {
                   <tr>
                     <th className="rapor-tablo-sticky-col">Gün</th>
                     <th className="rapor-tablo-sticky-col2">Tarih</th>
-                    {data.meatItems.map((m) => (
+                    {data.meatItems.map((m: MeatCol) => (
                       <th key={m.id} title={`${m.categoryName} — ${m.label}`} className="rapor-tablo-meat-head">
                         <span className="rapor-tablo-meat-code">{m.categoryCode}</span>
                         <span className="rapor-tablo-meat-label">{m.label}</span>
@@ -171,15 +193,16 @@ export default function RaporTabloPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.dates.map((d) => {
-                    const shortWd = format(parseISO(d), "EEE", { locale: tr });
+                  {data.dates.map((d: string) => {
+                    const day = parseISO(d);
+                    const shortWd = new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(day);
                     return (
                       <tr key={d}>
-                        <td className="rapor-tablo-sticky-col">{format(parseISO(d), "d")}</td>
+                        <td className="rapor-tablo-sticky-col">{format(day, "d")}</td>
                         <td className="rapor-tablo-sticky-col2">
-                          {shortWd} {format(parseISO(d), "d.MM.")}
+                          {shortWd} {format(day, "d.MM.")}
                         </td>
-                        {data.meatItems.map((m) => {
+                        {data.meatItems.map((m: MeatCol) => {
                           const v = data.matrix[m.id]?.[d] ?? 0;
                           return (
                             <td key={m.id} className="rapor-tablo-num">
@@ -197,7 +220,7 @@ export default function RaporTabloPage() {
                     <td className="rapor-tablo-sticky-col" colSpan={2}>
                       <strong>Ay toplamı (kg)</strong>
                     </td>
-                    {data.meatItems.map((m) => (
+                    {data.meatItems.map((m: MeatCol) => (
                       <td key={m.id} className="rapor-tablo-num">
                         <strong>{fmtKg(colTotals.perMeat[m.id] ?? 0)}</strong>
                       </td>

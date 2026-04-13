@@ -14,7 +14,7 @@
     "db:seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts",
     "db:add-dallas-steak": "node ./node_modules/tsx/dist/cli.mjs prisma/add-dallas-steak.ts",
     "db:add-dallas-docker": "bash deploy/add-dallas-via-docker-db.sh",
-    "postinstall": "prisma generate"
+    "postinstall": "bash scripts/prune-broken-atypes.sh && prisma generate"
   },
   "dependencies": {
     "prisma": "^6.5.0",

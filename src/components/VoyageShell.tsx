@@ -33,9 +33,6 @@ export function VoyageShell({ children }: { children: ReactNode }) {
           <SectionJumpLink sectionId="gunluk-giris" className="nav-item">
             Günlük veri girişi
           </SectionJumpLink>
-          <SectionJumpLink sectionId="gecmis-ve-raporlar" className="nav-item">
-            Geçmiş ve raporlar
-          </SectionJumpLink>
           <Link
             href="/rapor-tablo"
             className={`nav-item${pathname === "/rapor-tablo" ? " active" : ""}`}

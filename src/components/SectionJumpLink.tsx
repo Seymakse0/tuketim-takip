@@ -1,13 +1,12 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, PropsWithChildren } from "react";
 
-type Props = {
+type Props = PropsWithChildren<{
   sectionId: string;
   className?: string;
   style?: CSSProperties;
-  children: ReactNode;
-};
+}>;
 
 /** Same-page anchor; uses scrollIntoView so navigation works reliably with the App Router. */
 export function SectionJumpLink({ sectionId, className, style, children }: Props) {
@@ -16,7 +15,7 @@ export function SectionJumpLink({ sectionId, className, style, children }: Props
       href={`#${sectionId}`}
       className={className}
       style={style}
-      onClick={(e) => {
+      onClick={(e: MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
         const el = document.getElementById(sectionId);
         if (el) {
