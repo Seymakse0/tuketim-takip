@@ -195,7 +195,7 @@ git push origin main   # veya kullandığınız dal
 | 5 | HTTPS sertifikası bu hostname için (certbot veya wildcard) Nginx’te tanımlı. |
 | 6 | Tarayıcıda `https://kitchen.voyagestars.com` — giriş sayfası bu uygulamanın `/login` akışı olmalı. |
 
-**502 Bad Gateway:** Nginx çalışıyor ama **arka uç yok** demektir — genelde Docker `app` konteyneri düşmüş veya hiç başlamamış. Sunucuda (proje kökünde): `chmod +x deploy/diagnose-502.sh && ./deploy/diagnose-502.sh`. Ardından `docker compose -f docker-compose.production.yml up -d db && ... build app && ... up -d app` ve `curl -sI http://127.0.0.1:3005/health` → `200` olmalı. Cloudflare kullanıyorsanız DNS bu sunucuyu göstermeli; **Origin Down** da 5xx üretebilir.
+**502 Bad Gateway:** Nginx çalışıyor ama **arka uca ulaşamıyor** (Docker `app` kapalı, yanlış port veya `docker-compose.override.yml` 3010 vb. map ediyor). Sunucuda proje kökünde önce tanı: `chmod +x deploy/diagnose-502.sh && ./deploy/diagnose-502.sh`. **Otomatik onarım (build + db + app yeniden):** `chmod +x deploy/fix-502.sh && ./deploy/fix-502.sh` — bittikten sonra `curl -s http://127.0.0.1:3005/health` JSON `ok:true` dönmeli ve `sudo nginx -t && sudo systemctl reload nginx` ile Nginx’i yenileyin. Cloudflare’da **Origin Down** / yanlış DNS de 5xx üretebilir; `kitchen` → `gate` yönlendirmesi olmamalı.
 
 Bu site, aynı makinedeki diğer `voyagestars.com` sitelerinden (ör. `gate.voyagestars.com`) **bağımsız bir Docker Compose yığını** olarak çalışır. Dışarıya doğrudan port açmak yerine uygulama **yalnızca `127.0.0.1:3005`** üzerinden dinler; sunucudaki **Nginx** yalnızca **`kitchen.voyagestars.com`** için `proxy_pass` ile buraya yönlendirir. `kitchen` için ayrı `server_name` bloğu yoksa istekler başka sitenin `default_server` bloğuna düşebilir (ikisi de aynı siteyi gösterir).
 
@@ -244,7 +244,7 @@ docker compose -f docker-compose.production.yml up -d app
 Aynı akışı tek komutta (sunucuda, Linux): önce betiklere çalıştırma izni verin:
 
 ```bash
-chmod +x deploy/server-first-install.sh deploy/server-update.sh deploy/install-kitchen-nginx.sh
+chmod +x deploy/server-first-install.sh deploy/server-update.sh deploy/install-kitchen-nginx.sh deploy/diagnose-502.sh deploy/fix-502.sh
 ```
 
 - **İlk kurulum:** `./deploy/server-first-install.sh` (içeride: `up -d db` → `setup` → `up -d app`)

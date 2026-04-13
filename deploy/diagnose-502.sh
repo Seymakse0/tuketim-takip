@@ -51,3 +51,7 @@ echo "=== 3) Docker compose ps ==="
 echo ""
 echo "=== 4) app son loglar (40 satır) ==="
 "${COMPOSE[@]}" logs --tail=40 app 2>&1 || true
+
+echo ""
+echo "=== 5) Otomatik onarım ==="
+echo "  chmod +x deploy/fix-502.sh && ./deploy/fix-502.sh"

@@ -54,9 +54,9 @@ services:
           "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
         ]
       interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+      timeout: 10s
+      retries: 8
+      start_period: 120s
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
