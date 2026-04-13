@@ -24,18 +24,18 @@ Bağlantı dizesi şu kalıpta olmalıdır:
 `postgresql://KULLANICI:ŞİFRE@HOST:PORT/VERİTABANI_ADI?schema=public`
 
 - **HOST:** Bu bilgisayarda çalışıyorsa genelde `127.0.0.1` veya `localhost`.
-- **PORT:** Docker ile bu projedeki veritabanı **5433**; Windows’a kurulu PostgreSQL çoğunlukla **5432**.
+- **PORT:** Docker ile bu projedeki veritabanı **5434**; Windows’a kurulu PostgreSQL çoğunlukla **5432**.
 - **Şifre** içinde `@`, `#`, `:` gibi karakterler varsa URL’de özel anlam taşıdığı için [URL kodlaması](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding) gerekir (ör. `@` → `%40`).
 
 ### Yöntem 1 — Docker ile (bu repo, önerilen)
 
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) kurun ve **çalışır durumda** açın.
 2. Proje klasöründe terminalde: `npm run db:up`  
-   (`docker-compose.yml` içinde kullanıcı `tuketim`, şifre `tuketim`, veritabanı `tuketim_kontrol`, dış port **5433**.)
+   (`docker-compose.yml` içinde kullanıcı `tuketim`, şifre `tuketim`, veritabanı `tuketim_kontrol`, dış port **5434**.)
 3. Proje kökünde `.env` dosyası yoksa: `.env.example` dosyasını kopyalayıp `.env` adını verin.
 4. `.env` içine **tam olarak** şunu yazın (veya aynı anlama gelen tek satır):
 
-   `DATABASE_URL="postgresql://tuketim:tuketim@127.0.0.1:5433/tuketim_kontrol?schema=public"`
+   `DATABASE_URL="postgresql://tuketim:tuketim@127.0.0.1:5434/tuketim_kontrol?schema=public"`
 
 5. Bir kez çalıştırın: `npx prisma migrate deploy` ve `npm run db:seed`
 6. Uygulamayı başlatın: `npm run dev` (veya `npx next dev -p 3005` gibi bir port seçtiyseniz o adresi kullanın).
@@ -64,14 +64,14 @@ Kontrol: `docker ps` çıktısında `postgres` konteyneri **Up** görünmeli.
 npm install
 cp .env.example .env
 # Yerel Docker veritabanı (docker-compose.yml): .env içinde şu satır kullanılabilir:
-# DATABASE_URL="postgresql://tuketim:tuketim@127.0.0.1:5433/tuketim_kontrol?schema=public"
+# DATABASE_URL="postgresql://tuketim:tuketim@127.0.0.1:5434/tuketim_kontrol?schema=public"
 npm run db:up
 npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-**Not:** `Can't reach database server at 127.0.0.1:5433` hatası, PostgreSQL’in çalışmadığı anlamına gelir. Docker kullanıyorsanız önce **Docker Desktop**’ı açın, sonra `npm run db:up`. `baslat-dev.bat` Docker varsa konteyneri sizin için başlatır.
+**Not:** `Can't reach database server at 127.0.0.1:5434` hatası, PostgreSQL’in çalışmadığı anlamına gelir. Docker kullanıyorsanız önce **Docker Desktop**’ı açın, sonra `npm run db:up`. `baslat-dev.bat` Docker varsa konteyneri sizin için başlatır.
 
 Tarayıcı: `http://localhost:3000`
 
@@ -87,7 +87,7 @@ Veritabanı yoksa liste/rapor API’leri hata verebilir; tam çalışma için yu
 
 ```bash
 docker compose up -d db
-# .env içinde DATABASE_URL: postgresql://tuketim:tuketim@127.0.0.1:5433/tuketim_kontrol?schema=public
+# .env içinde DATABASE_URL: postgresql://tuketim:tuketim@127.0.0.1:5434/tuketim_kontrol?schema=public
 npx prisma migrate deploy
 npm run db:seed
 npm run dev
@@ -126,7 +126,7 @@ cd tuketim-takip
 
 **3) `.env` (sunucuda, gizli tutun)**
 
-`DATABASE_URL` artık **localhost:5432** (veya aynı makinedeki Postgres) olmalı; Docker’daki `:5433` kullanılmaz:
+`DATABASE_URL` artık **localhost:5432** (veya aynı makinedeki Postgres) olmalı; Docker’daki `:5434` kullanılmaz:
 
 ```env
 DATABASE_URL="postgresql://tuketim:güçlü_şifre@127.0.0.1:5432/tuketim_kontrol?schema=public"

@@ -268,7 +268,7 @@ export function ConsumptionPanel() {
             <li>
               <code className="voyage-code">.env</code> içindeki{" "}
               <code className="voyage-code">DATABASE_URL</code> Docker için genelde{" "}
-              <code className="voyage-code">127.0.0.1:5433</code> kullanır.
+              <code className="voyage-code">127.0.0.1:5434</code> kullanır.
             </li>
           </ol>
           <button type="button" onClick={() => void load()} className="btn btn-primary">
