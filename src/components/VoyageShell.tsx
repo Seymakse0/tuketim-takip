@@ -3,11 +3,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { SectionJumpLink } from "@/components/SectionJumpLink";
-
 export function VoyageShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const homeActive = pathname === "/";
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -30,9 +29,9 @@ export function VoyageShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="sidebar-nav" aria-label="Bölümler">
-          <SectionJumpLink sectionId="gunluk-giris" className="nav-item">
+          <Link href="/#gunluk-giris" className={`nav-item${homeActive ? " active" : ""}`}>
             Günlük veri girişi
-          </SectionJumpLink>
+          </Link>
           <Link
             href="/rapor-tablo"
             className={`nav-item${pathname === "/rapor-tablo" ? " active" : ""}`}
