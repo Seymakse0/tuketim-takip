@@ -98,11 +98,11 @@ Tam yığın için `docker-compose.yml` içindeki `app` servisini kullanmadan ö
 **Sunucuda `app` konteyneri ayaktayken** (güncel Docker imajı gerekir) şema ve seed için:
 
 ```bash
-docker compose exec app prisma migrate deploy
+docker compose exec app npm run db:migrate
 docker compose exec app npm run db:seed
 ```
 
-Konteyner içinde **`npx prisma ...` kullanmayın** — `npx` Prisma 7 indirip şema ile uyumsuz hata verebilir; proje Prisma 6 kullanır.
+Konteyner içinde **`npx prisma ...` kullanmayın** — `npx` Prisma 7 indirip şema ile uyumsuz hata verebilir. `npm run db:migrate` / `db:seed` yerleşik Prisma 6 ve `node` ile çalışır.
 
 ## Otel sunucusu ve GitHub
 

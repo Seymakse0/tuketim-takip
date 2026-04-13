@@ -4,7 +4,8 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth-session";
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/_next/static") || pathname.startsWith("/_next/image")) return true;
-  if (pathname === "/favicon.ico") return true;
+  if (pathname === "/favicon.ico" || pathname === "/favicon.svg") return true;
+  if (pathname === "/health") return true;
   return false;
 }
 
@@ -50,5 +51,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg).*)",
+    "/",
+  ],
 };

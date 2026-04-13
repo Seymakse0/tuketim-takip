@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Et tüketim kontrolü",
   description: "Mutfak günlük et tüketimi girişi ve raporlar",
   icons: {
-    icon: "/icon",
+    icon: "/favicon.svg",
   },
 };
 

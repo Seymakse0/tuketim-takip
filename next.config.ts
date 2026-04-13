@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
     "/api/**/*": ["./prisma/**/*"],
   },
   async rewrites() {
-    return [{ source: "/favicon.ico", destination: "/icon" }];
+    // Eski istemciler /favicon.ico ister; statik SVG'ye yönlendir (Docker'da dinamik /icon OG bağımlılığı yok)
+    return [{ source: "/favicon.ico", destination: "/favicon.svg" }];
   },
 };
 

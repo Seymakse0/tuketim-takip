@@ -34,14 +34,13 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
 COPY --from=builder /app/node_modules/esbuild ./node_modules/esbuild
 COPY --from=builder /app/node_modules/get-tsconfig ./node_modules/get-tsconfig
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
+COPY --from=builder /app/node_modules/@esbuild ./node_modules/@esbuild
+# .bin içindeki prisma/tsx kopyalanınca WASM/symlink bozuluyor; migrate/seed: npm run db:migrate / db:seed
 RUN chown -R nextjs:nodejs /app/node_modules/prisma /app/node_modules/@prisma /app/node_modules/tsx \
-  /app/node_modules/esbuild /app/node_modules/get-tsconfig /app/node_modules/.bin/prisma /app/node_modules/.bin/tsx \
+  /app/node_modules/esbuild /app/node_modules/get-tsconfig /app/node_modules/@esbuild \
   2>/dev/null || true
 
 USER nextjs
-ENV PATH="/app/node_modules/.bin:${PATH}"
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
