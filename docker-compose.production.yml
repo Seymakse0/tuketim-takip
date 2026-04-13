@@ -9,6 +9,9 @@
 #   docker compose -f docker-compose.production.yml up -d app
 #
 # Güncelleme: git pull, docker compose -f docker-compose.production.yml build app && ... up -d app
+#
+# Yayınlanan port: 127.0.0.1:3005 (Nginx kitchen conf ile aynı olmalı).
+# docker-compose.override.yml ile 3010 vb. map ederseniz 502 alırsınız — override’ı kaldırın veya Nginx’i eşleştirin.
 
 services:
   db:

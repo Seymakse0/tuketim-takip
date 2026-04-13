@@ -1,31 +1,53 @@
 #!/usr/bin/env bash
-# Sunucuda (SSH): 502 Bad Gateway teşhisi — Nginx ayakta ama arkası (Docker app) boş.
+# Sunucuda (SSH): 502 Bad Gateway — genelde Nginx 3005 bekler, Docker başka porta map edilmiştir.
 # Kullanım: chmod +x deploy/diagnose-502.sh && ./deploy/diagnose-502.sh
-set -euo pipefail
+set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 COMPOSE=(docker compose -f docker-compose.production.yml)
+NGINX_EXPECT_PORT="3005"
 
-echo "=== 1) 127.0.0.1:3005 (Docker app) ==="
-if curl -sS -o /dev/null -w "HTTP %{http_code}\n" --connect-timeout 3 http://127.0.0.1:3005/health; then
-  :
+echo "=== 1) Gerçek host portu (app konteyneri 3000 → sunucu) ==="
+MAPPING=""
+MAPPING=$("${COMPOSE[@]}" port app 3000 2>/dev/null) || true
+if [[ -z "${MAPPING}" ]]; then
+  echo "compose port app 3000 bilgisi yok (konteyner yok mu?). Elle: docker compose ps"
+  HOST_PORT=""
 else
-  echo "❌ 3005 yanıt yok veya bağlantı reddedildi → uygulama konteyneri çalışmıyor olabilir."
+  HOST_PORT="${MAPPING##*:}"
+  echo "Harita: ${MAPPING}  → 127.0.0.1:${HOST_PORT}/health deneniyor"
+  if curl -sS -o /dev/null -w "HTTP %{http_code}\n" --connect-timeout 3 "http://127.0.0.1:${HOST_PORT}/health"; then
+    :
+  else
+    echo "❌ Bu porta curl başarısız."
+  fi
+  if [[ "${HOST_PORT}" != "${NGINX_EXPECT_PORT}" ]]; then
+    echo ""
+    echo "⚠️  UYUMSUZLUK: Nginx örneği (deploy/nginx-kitchen...) → 127.0.0.1:${NGINX_EXPECT_PORT}"
+    echo "    Sizde uygulama → :${HOST_PORT}. Bu yüzden tarayıcıda 502 görürsünüz."
+    echo ""
+    echo "    Çözüm A (önerilen): repodaki gibi sadece localhost 3005 kullanın:"
+    echo "      rm -f docker-compose.override.yml   # varsa ve portu değiştiriyorsa"
+    echo "      grep -n ports docker-compose.production.yml   # 127.0.0.1:3005:3000 olmalı"
+    echo "      ${COMPOSE[*]} up -d app --force-recreate"
+    echo ""
+    echo "    Çözüm B: Nginx'te proxy_pass http://127.0.0.1:${HOST_PORT}; yapın, nginx -t && reload."
+  fi
 fi
 
 echo ""
-echo "=== 2) Docker compose ps ==="
-"${COMPOSE[@]}" ps -a 2>&1 || echo "(docker compose çalışmadı — kurulu mu?)"
+echo "=== 2) Nginx'in beklediği port (${NGINX_EXPECT_PORT}) ==="
+if [[ "${HOST_PORT:-}" == "${NGINX_EXPECT_PORT}" ]] || [[ -z "${HOST_PORT}" ]]; then
+  curl -sS -o /dev/null -w "HTTP %{http_code}\n" --connect-timeout 3 "http://127.0.0.1:${NGINX_EXPECT_PORT}/health" || echo "❌ ${NGINX_EXPECT_PORT} kapalı."
+else
+  echo "(Atlandı — uygulama şu an :${HOST_PORT} üzerinde; yukarıdaki uyumsuzluğu giderin.)"
+fi
 
 echo ""
-echo "=== 3) app konteyneri son loglar (50 satır) ==="
-"${COMPOSE[@]}" logs --tail=50 app 2>&1 || true
+echo "=== 3) Docker compose ps ==="
+"${COMPOSE[@]}" ps -a 2>&1 || echo "(docker compose çalışmadı)"
 
 echo ""
-echo "=== 4) Önerilen komutlar (çalışmıyorsa) ==="
-echo "  cd $REPO_ROOT && git pull"
-echo "  test -f .env || (echo 'Hata: .env yok'; cp .env.production.example .env; exit 1)"
-echo "  ${COMPOSE[*]} up -d db"
-echo "  ${COMPOSE[*]} build app && ${COMPOSE[*]} up -d app"
-echo "  curl -sI http://127.0.0.1:3005/health"
+echo "=== 4) app son loglar (40 satır) ==="
+"${COMPOSE[@]}" logs --tail=40 app 2>&1 || true
