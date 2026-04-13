@@ -16,8 +16,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz istek" }, { status: 400 });
   }
   const o = body as { username?: string; password?: string };
-  const username = String(o?.username ?? "").trim();
-  const password = String(o?.password ?? "");
+  const username = String(o?.username ?? "")
+    .replace(/\r/g, "")
+    .trim();
+  const password = String(o?.password ?? "").replace(/\r/g, "");
   if (!username || !password) {
     return NextResponse.json({ error: "Kullanıcı adı ve şifre gerekli" }, { status: 400 });
   }
