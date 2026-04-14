@@ -68,7 +68,19 @@ declare module "next/server" {
     };
   }
 
+  /** Route handler’larda NextResponse.json() dönüşü; `cookies.set` gerçek Next.js ile uyumludur. */
+  export interface NextResponseCookieOptions {
+    httpOnly?: boolean;
+    sameSite?: "lax" | "strict" | "none";
+    path?: string;
+    maxAge?: number;
+    secure?: boolean;
+  }
+
   export class NextResponse extends Response {
+    readonly cookies: {
+      set(name: string, value: string, options?: NextResponseCookieOptions): void;
+    };
     static next(): NextResponse;
     static redirect(url: string | URL, init?: number): NextResponse;
     static json(body: ShimAny, init?: ResponseInit): NextResponse;
