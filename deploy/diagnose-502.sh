@@ -8,6 +8,11 @@ cd "$REPO_ROOT"
 COMPOSE=(docker compose -f docker-compose.production.yml)
 NGINX_EXPECT_PORT="3005"
 
+echo "=== 0) Doğru compose dosyası ==="
+echo "Sunucuda üretim: ${COMPOSE[*]} (127.0.0.1:${NGINX_EXPECT_PORT} → app:3000)"
+echo "Yalnızca 'docker compose up' kullanırsanız docker-compose.yml (3000:3000) devre girer; port çakışması ve 502 yaşanabilir."
+echo ""
+
 echo "=== 1) Gerçek host portu (app konteyneri 3000 → sunucu) ==="
 MAPPING=""
 MAPPING=$("${COMPOSE[@]}" port app 3000 2>/dev/null) || true
