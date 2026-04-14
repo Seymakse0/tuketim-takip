@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Sunucuda 502 Bad Gateway için: db + app konteynerlerini doğru portla yeniden ayağa kaldırır.
 # Kullanım (proje kökünde): chmod +x deploy/fix-502.sh && ./deploy/fix-502.sh
+# Acil (override yedekle + yeniden kur): ./deploy/emergency-502.sh
+#    veya: NONINTERACTIVE=1 AUTO_BACKUP_OVERRIDE=1 ./deploy/fix-502.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,12 +23,19 @@ if [[ -f docker-compose.override.yml ]]; then
   echo "    İçerik:"
   sed 's/^/    /' docker-compose.override.yml || true
   echo ""
-  if [[ "${SKIP_OVERRIDE_PROMPT:-}" != "1" ]]; then
+  if [[ "${AUTO_BACKUP_OVERRIDE:-}" == "1" ]]; then
+    mv -f docker-compose.override.yml docker-compose.override.yml.bak."$(date +%Y%m%d%H%M)"
+    echo "→ Yedeklendi (AUTO_BACKUP_OVERRIDE=1)."
+  elif [[ "${SKIP_OVERRIDE_PROMPT:-}" == "1" ]]; then
+    :
+  elif [[ -t 0 ]] && [[ "${NONINTERACTIVE:-}" != "1" ]]; then
     read -r -p "Geçici olarak devre dışı bırakılsın mı? (y/N) " ans
     if [[ "${ans:-}" =~ ^[yY]$ ]]; then
       mv -f docker-compose.override.yml docker-compose.override.yml.bak."$(date +%Y%m%d%H%M)"
       echo "→ Yedeklendi, tekrar deneyebilirsiniz."
     fi
+  else
+    echo "→ Override dokunulmadı. Acil durum: AUTO_BACKUP_OVERRIDE=1 ./deploy/fix-502.sh"
   fi
   echo ""
 fi

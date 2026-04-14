@@ -7,6 +7,8 @@ node_modules
 out
 .env
 .env.local
+# Yerel port çakışması için; yanlışlıkla commit edilirse üretimde Nginx (3005) ile uyumsuzluk → 502
+docker-compose.override.yml
 .env.*.local
 npm-debug.log*
 .DS_Store
