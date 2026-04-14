@@ -23,6 +23,10 @@ declare module "react" {
 
   export interface MouseEvent<T extends Element = Element> extends SyntheticEvent<T> {}
 
+  export interface ClipboardEvent<T extends Element = Element> extends SyntheticEvent<T> {
+    clipboardData: DataTransfer | null;
+  }
+
   export interface ChangeEvent<T extends Element = Element> extends FormEvent<T> {
     target: T & EventTarget;
   }

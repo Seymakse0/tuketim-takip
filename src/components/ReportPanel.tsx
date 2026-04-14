@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 
 type ReportRow = {
   categoryCode: string;
@@ -60,7 +60,7 @@ export function ReportPanel() {
         Raporlar (salt okunur)
       </h2>
       <p className="voyage-muted mb-16">
-        Günlük, haftalık veya aylık özet için tarih seçip <strong>Oluştur</strong> düğmesine basın.
+        Günlük, haftalık veya aylık özet için tarih seçip <strong>Raporu oluştur</strong> düğmesine basın.
         Hafta, seçtiğiniz günün içinde bulunduğu <strong>Pazartesi–Pazar</strong> aralığıdır.
       </p>
       <div
@@ -74,7 +74,7 @@ export function ReportPanel() {
           <select
             id="rapor-tur"
             value={kind}
-            onChange={(e) => setKind(e.target.value as typeof kind)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => setKind(e.target.value as typeof kind)}
           >
             <option value="daily">Günlük</option>
             <option value="weekly">Haftalık (Pzt–Paz)</option>
@@ -89,7 +89,12 @@ export function ReportPanel() {
                 ? "Haftayı seçmek için bu haftadan bir gün"
                 : "Ayı seçmek için o ayda bir gün"}
           </label>
-          <input id="rapor-tarih" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            id="rapor-tarih"
+            type="date"
+            value={date}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
+          />
         </div>
         <button type="button" onClick={() => void run()} disabled={loading} className="btn btn-primary">
           {loading ? "Hazırlanıyor…" : "Raporu oluştur"}

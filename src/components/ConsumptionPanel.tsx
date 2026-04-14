@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+} from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type ItemRow = {
   meatItemId: string;
@@ -68,8 +76,10 @@ async function readJsonResponse(res: Response): Promise<Record<string, unknown>>
 }
 
 export function ConsumptionPanel() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [date, setDate] = useState(todayInputValue);
-  const [historyDraft, setHistoryDraft] = useState(todayInputValue);
   const [data, setData] = useState<ConsumptionResponse | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -113,6 +123,11 @@ export function ConsumptionPanel() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const q = searchParams.get("date");
+    if (q && DATE_ONLY.test(q)) setDate(q);
+  }, [searchParams]);
 
   const grouped = useMemo(() => {
     if (!data) return [];
@@ -166,12 +181,7 @@ export function ConsumptionPanel() {
   const goToToday = () => {
     const t = todayInputValue();
     setDate(t);
-    setHistoryDraft(t);
-  };
-
-  const applyHistoryDate = () => {
-    if (!DATE_ONLY.test(historyDraft)) return;
-    setDate(historyDraft);
+    router.replace(pathname);
   };
 
   return (
@@ -191,8 +201,8 @@ export function ConsumptionPanel() {
       <p className="voyage-muted mb-16">
         Her et için <strong>kilogram</strong> değerini kutuya yazın (yalnızca rakam ve virgül; ondalık
         ayırıcı virgüldür). Kayıtlar <strong>0,5 kg</strong> adımlarına yuvarlanır.{" "}
-        <strong>Kaydet</strong> ile kaydedin. Başka bir gün için alttaki{" "}
-        <strong>«Başka bir gün seç»</strong> bölümünü kullanın.
+        <strong>Kaydet</strong> ile kaydedin. Geçmiş bir günü açmak için{" "}
+        <strong>Rapor tablosu</strong> sayfasındaki <strong>«Geçmiş kayıt»</strong> bölümünü kullanın.
       </p>
 
       <div className="mb-16" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
@@ -207,34 +217,6 @@ export function ConsumptionPanel() {
           </button>
         )}
       </div>
-
-      <details className="voyage-details">
-        <summary>Başka bir gün seç</summary>
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-end",
-            gap: 12,
-          }}
-        >
-          <div className="form-group" style={{ minWidth: 200 }}>
-            <label htmlFor="tuketim-gecmis-tarih" className="form-label">
-              Tarih
-            </label>
-            <input
-              id="tuketim-gecmis-tarih"
-              type="date"
-              value={historyDraft}
-              onChange={(e) => setHistoryDraft(e.target.value)}
-            />
-          </div>
-          <button type="button" onClick={applyHistoryDate} className="btn btn-primary">
-            Bu tarihi göster
-          </button>
-        </div>
-      </details>
 
       {loading && (
         <div className="loading" role="status">
@@ -314,11 +296,13 @@ export function ConsumptionPanel() {
                             disabled={!canEdit}
                             aria-labelledby={`kg-label-${it.meatItemId}`}
                             value={draft}
-                            onChange={(e) => setDraft(it.meatItemId, e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setDraft(it.meatItemId, e.target.value)
+                            }
                             onBlur={() => normalizeDraftOnBlur(it.meatItemId)}
-                            onPaste={(e) => {
+                            onPaste={(e: ClipboardEvent<HTMLInputElement>) => {
                               e.preventDefault();
-                              const t = e.clipboardData.getData("text");
+                              const t = e.clipboardData?.getData("text") ?? "";
                               setDrafts((d) => {
                                 const cur = d[it.meatItemId] ?? "";
                                 return { ...d, [it.meatItemId]: sanitizeKgInput(cur + t) };
