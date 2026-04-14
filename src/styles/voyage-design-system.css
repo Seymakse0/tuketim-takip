@@ -651,7 +651,8 @@ body:has(.rapor-tablo-layout-root) #main {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--bg);
 }
 
@@ -672,6 +673,84 @@ body:has(.rapor-tablo-layout-root) #main {
   flex-wrap: wrap;
   gap: 16px;
   align-items: flex-end;
+}
+
+/* Özet rapor — düzenli araç çubuğu ve sütunlu tablo */
+.rapor-ozet-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface2);
+}
+
+.rapor-ozet-field {
+  min-width: 0;
+}
+
+.rapor-ozet-actions {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .rapor-ozet-actions {
+    grid-column: auto;
+    align-self: end;
+  }
+  .rapor-ozet-toolbar {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.rapor-ozet-sonuc {
+  margin-top: 8px;
+}
+
+.rapor-ozet-sonuc-baslik {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.rapor-ozet-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+table.rapor-ozet-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+}
+
+.rapor-ozet-table th,
+.rapor-ozet-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.rapor-ozet-table thead th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: var(--surface2);
+}
+
+.rapor-ozet-col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .rapor-tablo-inline-link {
