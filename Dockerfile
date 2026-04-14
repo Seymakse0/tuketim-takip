@@ -3,6 +3,8 @@ FROM node:22-alpine AS deps
 # npm postinstall prune script; find/grep (Alpine’de bash gerekmez)
 WORKDIR /app
 COPY package.json package-lock.json* ./
+# postinstall → sh scripts/prune-broken-atypes.sh (dosya npm ci öncesinde imajda olmalı)
+COPY scripts ./scripts
 # postinstall → prisma generate şemaya ihtiyaç duyar
 COPY prisma ./prisma
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
