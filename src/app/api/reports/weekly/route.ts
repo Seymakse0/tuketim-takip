@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
+import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 import { endOfDay, format } from "date-fns";
 
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
         rows: meatItems.map((m: MeatItemRow) => ({
           categoryCode: m.categoryCode,
           categoryName: m.categoryName,
-          label: m.label,
+          label: normalizeMeatItemLabel(m.label),
           quantityKg: sumByMeat.get(m.id) ?? 0,
         })),
         totalKg: meatItems.reduce((s: number, m: MeatItemRow) => s + (sumByMeat.get(m.id) ?? 0), 0),
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest) {
       rows: meatItems.map((m: MeatItemRow) => ({
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
-        label: m.label,
+        label: normalizeMeatItemLabel(m.label),
         quantityKg: sumByMeat.get(m.id) ?? 0,
       })),
       totalKg: meatItems.reduce((s: number, m: MeatItemRow) => s + (sumByMeat.get(m.id) ?? 0), 0),

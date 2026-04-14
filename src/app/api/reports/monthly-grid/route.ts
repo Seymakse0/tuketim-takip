@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { dateToYmd, formatTr, monthRange, parseDateOnly } from "@/lib/dates";
+import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 import { format } from "date-fns";
 
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
         id: m.id,
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
-        label: m.label,
+        label: normalizeMeatItemLabel(m.label),
       })),
       matrix,
     });

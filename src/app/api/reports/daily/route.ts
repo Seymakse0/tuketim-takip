@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { dayRange, formatTr, parseDateOnly } from "@/lib/dates";
+import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
 export async function GET(req: NextRequest) {
@@ -21,19 +22,24 @@ export async function GET(req: NextRequest) {
     const rows = await prisma.dailyConsumption.findMany({
       where: { date: { gte: from, lte: to } },
     });
-    const byId = new Map(rows.map((r) => [r.meatItemId, r.quantityKg]));
+    const byId = new Map<string, number>(
+      rows.map((r: { meatItemId: string; quantityKg: number }) => [r.meatItemId, r.quantityKg])
+    );
 
     return NextResponse.json({
       type: "daily" as const,
       label: formatTr(day, "d MMMM yyyy"),
       date: dateStr.slice(0, 10),
-      rows: meatItems.map((m) => ({
+      rows: meatItems.map((m: { id: string; categoryCode: string; categoryName: string; label: string }) => ({
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
-        label: m.label,
+        label: normalizeMeatItemLabel(m.label),
         quantityKg: byId.get(m.id) ?? 0,
       })),
-      totalKg: meatItems.reduce((s, m) => s + (byId.get(m.id) ?? 0), 0),
+      totalKg: meatItems.reduce(
+        (s: number, m: { id: string }) => s + (byId.get(m.id) ?? 0),
+        0
+      ),
     });
   } catch (e) {
     return prismaErrorResponse(e);

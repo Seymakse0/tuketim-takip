@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/db";
 import { dayRange, formatTr, parseDateOnly } from "@/lib/dates";
+import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
 export async function GET(req: NextRequest) {
@@ -55,10 +56,11 @@ export async function GET(req: NextRequest) {
   for (const m of meatItems) {
     const row = sheet.getRow(r);
     const qty = byId.get(m.id) ?? 0;
-    row.values = [m.categoryCode, m.categoryName, m.label, qty];
+    const displayLabel = normalizeMeatItemLabel(m.label);
+    row.values = [m.categoryCode, m.categoryName, displayLabel, qty];
     row.getCell(4).numFmt = "0.0";
     row.alignment = { vertical: "top", wrapText: true };
-    const labelLen = m.label.length;
+    const labelLen = displayLabel.length;
     row.height = Math.max(18, Math.ceil(labelLen / 55) * 15);
     r++;
   }

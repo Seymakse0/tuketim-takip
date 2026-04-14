@@ -1,24 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { isDateEditable, parseDateOnly } from "@/lib/dates";
+import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
 const halfKg = (n: number) => Math.round(n * 2) / 2;
 
-const postSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  items: z.array(
-    z.object({
-      meatItemId: z.string().min(1),
-      quantityKg: z.coerce
-        .number()
-        .min(0)
-        .max(1_000_000)
-        .transform((n) => halfKg(n)),
-    })
-  ),
-});
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseConsumptionBody(body: unknown):
+  | { ok: true; date: string; items: { meatItemId: string; quantityKg: number }[] }
+  | { ok: false } {
+  if (body === null || typeof body !== "object") return { ok: false };
+  const o = body as Record<string, unknown>;
+  const date = o.date;
+  if (typeof date !== "string" || !DATE_ONLY.test(date)) return { ok: false };
+  const raw = o.items;
+  if (!Array.isArray(raw)) return { ok: false };
+  const items: { meatItemId: string; quantityKg: number }[] = [];
+  for (const el of raw) {
+    if (el === null || typeof el !== "object") return { ok: false };
+    const row = el as Record<string, unknown>;
+    const meatItemId = row.meatItemId;
+    if (typeof meatItemId !== "string" || meatItemId.length < 1) return { ok: false };
+    const q = row.quantityKg;
+    const n =
+      typeof q === "number"
+        ? q
+        : typeof q === "string"
+          ? Number.parseFloat(q)
+          : Number.NaN;
+    if (!Number.isFinite(n) || n < 0 || n > 1_000_000) return { ok: false };
+    items.push({ meatItemId, quantityKg: halfKg(n) });
+  }
+  return { ok: true, date, items };
+}
 
 export async function GET(req: NextRequest) {
   const dateStr = req.nextUrl.searchParams.get("date");
@@ -43,17 +59,19 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    const byId = new Map(rows.map((r) => [r.meatItemId, r.quantityKg]));
+    const byId = new Map(
+      rows.map((r: { meatItemId: string; quantityKg: number }) => [r.meatItemId, r.quantityKg])
+    );
     const editable = isDateEditable(day);
 
     return NextResponse.json({
       date: dateStr.slice(0, 10),
       editable,
-      items: meatItems.map((m) => ({
+      items: meatItems.map((m: { id: string; categoryCode: string; categoryName: string; label: string }) => ({
         meatItemId: m.id,
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
-        label: m.label,
+        label: normalizeMeatItemLabel(m.label),
         quantityKg: byId.get(m.id) ?? 0,
       })),
     });
@@ -70,15 +88,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "İstek gövdesi okunamadı (geçersiz biçim)." }, { status: 400 });
   }
 
-  const parsed = postSchema.safeParse(body);
-  if (!parsed.success) {
+  const parsed = parseConsumptionBody(body);
+  if (!parsed.ok) {
     return NextResponse.json(
-      { error: "Girilen değerler geçerli değil (kg tam sayı olmalı).", details: parsed.error.flatten() },
+      { error: "Girilen değerler geçerli değil (kg tam sayı olmalı)." },
       { status: 400 }
     );
   }
 
-  const { date, items } = parsed.data;
+  const { date, items } = parsed;
   let day: Date;
   try {
     day = parseDateOnly(date);
@@ -88,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const validIds = new Set(
-      (await prisma.meatItem.findMany({ select: { id: true } })).map((x) => x.id)
+      (await prisma.meatItem.findMany({ select: { id: true } })).map((x: { id: string }) => x.id)
     );
     for (const row of items) {
       if (!validIds.has(row.meatItemId)) {
@@ -97,7 +115,7 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.$transaction(
-      items.map((row) =>
+      items.map((row: { meatItemId: string; quantityKg: number }) =>
         prisma.dailyConsumption.upsert({
           where: {
             date_meatItemId: { date: day, meatItemId: row.meatItemId },
