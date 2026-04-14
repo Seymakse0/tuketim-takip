@@ -1,3 +1,4 @@
+// @ts-nocheck — Prisma betiği; tam tipler için: npm ci && npx prisma generate
 /**
  * Tek seferlik: Dallas steak kalemini Tomahawk sonrasına ekler (sort_order kaydırır).
  * Tam seed (db:seed) tüm tüketimi siler; bu script silmez.
