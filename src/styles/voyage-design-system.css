@@ -696,13 +696,10 @@ body:has(.rapor-tablo-layout-root) #main {
   grid-column: 1 / -1;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 900px) {
   .rapor-ozet-actions {
     grid-column: auto;
     align-self: end;
-  }
-  .rapor-ozet-toolbar {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
