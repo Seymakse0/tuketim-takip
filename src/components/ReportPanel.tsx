@@ -57,11 +57,12 @@ export function ReportPanel() {
   return (
     <div id="raporlar" className="scroll-mt-6" aria-labelledby="raporlar-baslik">
       <h2 id="raporlar-baslik" className="card-title" style={{ marginBottom: 8 }}>
-        Raporlar (salt okunur)
+        Günlük / haftalık / aylık özet raporlar
       </h2>
       <p className="voyage-muted mb-16">
-        Günlük, haftalık veya aylık özet için tarih seçip <strong>Raporu oluştur</strong> düğmesine basın.
-        Hafta, seçtiğiniz günün içinde bulunduğu <strong>Pazartesi–Pazar</strong> aralığıdır.
+        <strong>Rapor türü</strong>nden günlük, haftalık veya aylık seçin; tarih seçip{" "}
+        <strong>Raporu oluştur</strong> düğmesine basın. Haftalık raporda, seçtiğiniz günün içinde bulunduğu{" "}
+        <strong>Pazartesi–Pazar</strong> haftası kullanılır.
       </p>
       <div
         className="mb-24"

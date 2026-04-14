@@ -8,6 +8,7 @@ import {
   type ChangeEvent,
   type ClipboardEvent,
 } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type ItemRow = {
@@ -188,14 +189,19 @@ export function ConsumptionPanel() {
     <section id="gunluk-giris" className="card scroll-mt-6" aria-labelledby="gunluk-giris-baslik">
       <div className="card-title" style={{ marginBottom: 12 }}>
         <h2 id="gunluk-giris-baslik">Günlük tüketim girişi (mutfak)</h2>
-        {data && !loading && DATE_ONLY.test(date) && (
-          <a
-            href={`/api/export/daily?date=${encodeURIComponent(date)}`}
-            className="btn btn-secondary btn-sm"
-          >
-            Bu günü Excel’e aktar
-          </a>
-        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          <Link href="/rapor-tablo" className="btn btn-primary btn-sm">
+            Rapor bölümüne git
+          </Link>
+          {data && !loading && DATE_ONLY.test(date) && (
+            <a
+              href={`/api/export/daily?date=${encodeURIComponent(date)}`}
+              className="btn btn-secondary btn-sm"
+            >
+              Bu günü Excel’e aktar
+            </a>
+          )}
+        </div>
       </div>
 
       <p className="voyage-muted mb-16">

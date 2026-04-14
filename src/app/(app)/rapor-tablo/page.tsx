@@ -105,8 +105,8 @@ export default function RaporTabloPage() {
         <div>
           <h1 className="page-title">Rapor tablosu</h1>
           <p className="page-sub">
-            Geçmiş günlük kayıt ve günlük / haftalık / aylık özet raporlar bu sayfadadır. Aşağıda seçilen aya
-            göre gün bazlı detay ızgarası yer alır. Ana sayfaya{" "}
+            Bu sayfada günlük / haftalık / aylık özet raporlar, geçmiş gün için günlük girişe geçiş ve seçilen
+            aya göre günlük detay tablosu yer alır. Ana sayfaya{" "}
             <Link href="/" className="rapor-tablo-inline-link">
               dön
             </Link>
@@ -115,11 +115,11 @@ export default function RaporTabloPage() {
         </div>
       </header>
 
-      <HistoryToDailyEntry />
-
       <section className="card scroll-mt-6" aria-labelledby="raporlar-baslik">
         <ReportPanel />
       </section>
+
+      <HistoryToDailyEntry />
 
       <section className="rapor-tablo-monthly-block" aria-labelledby="aylik-detay-baslik">
         <h2 id="aylik-detay-baslik" className="card-title" style={{ marginBottom: 12 }}>

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { ConsumptionPanel } from "@/components/ConsumptionPanel";
-import { ReportEntryTeaser } from "@/components/ReportEntryTeaser";
 
 export default function Home() {
   return (
@@ -9,9 +8,9 @@ export default function Home() {
         <div>
           <h1 className="page-title">Et tüketim kontrolü</h1>
           <p className="page-sub">
-            Bugünün tüketimini aşağıdan girebilir veya güncelleyebilirsiniz. Geçmiş bir gün ve özet
-            raporlar için <strong>Rapor tablosu</strong> sayfasına gidin veya alttaki <strong>Rapor</strong>{" "}
-            bölümünden geçin.
+            Bugünün tüketimini aşağıdan girebilir veya güncelleyebilirsiniz. Geçmiş gün ve günlük / haftalık /
+            aylık özet raporlar için karttaki <strong>Rapor bölümüne git</strong> ile{" "}
+            <strong>Rapor tablosu</strong> sayfasına geçin.
           </p>
         </div>
       </header>
@@ -20,7 +19,6 @@ export default function Home() {
         <Suspense fallback={<div className="card">Yükleniyor…</div>}>
           <ConsumptionPanel />
         </Suspense>
-        <ReportEntryTeaser />
       </div>
     </>
   );
