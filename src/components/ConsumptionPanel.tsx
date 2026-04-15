@@ -182,7 +182,14 @@ export function ConsumptionPanel() {
   const goToToday = () => {
     const t = todayInputValue();
     setDate(t);
-    router.replace(pathname);
+    router.replace(`${pathname}?date=${encodeURIComponent(t)}`);
+  };
+
+  const onDateChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (!DATE_ONLY.test(v)) return;
+    setDate(v);
+    router.replace(`${pathname}?date=${encodeURIComponent(v)}`);
   };
 
   return (
@@ -207,18 +214,38 @@ export function ConsumptionPanel() {
       <p className="voyage-muted mb-16">
         Her et için <strong>kilogram</strong> değerini kutuya yazın (yalnızca rakam ve virgül; ondalık
         ayırıcı virgüldür). Kayıtlar <strong>0,5 kg</strong> adımlarına yuvarlanır.{" "}
-        <strong>Kaydet</strong> ile kaydedin. Geçmiş bir günü açmak için{" "}
-        <strong>Rapor tablosu</strong> sayfasındaki <strong>«Geçmiş kayıt»</strong> bölümünü kullanın.
+        <strong>Kaydet</strong> ile kaydedin. Aşağıdan <strong>kayıt tarihini</strong> değiştirerek bugün veya
+        geçmiş (ve gelecek) herhangi bir güne veri girebilirsiniz.
       </p>
 
-      <div className="mb-16" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+      <div
+        className="mb-16"
+        style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12 }}
+      >
+        <div className="form-group" style={{ marginBottom: 0, minWidth: 200 }}>
+          <label htmlFor="gunluk-tarih" className="form-label">
+            Kayıt tarihi
+          </label>
+          <input
+            id="gunluk-tarih"
+            type="date"
+            value={date}
+            min="2000-01-01"
+            max="2100-12-31"
+            onChange={onDateChange}
+          />
+        </div>
         {viewingToday ? (
-          <span className="badge badge-green">Bugün ({today})</span>
+          <span className="badge badge-green" style={{ marginBottom: 4 }}>
+            Bugün ({today})
+          </span>
         ) : (
-          <span className="badge badge-gray">Seçili gün: {date} — düzenleyebilirsiniz</span>
+          <span className="badge badge-gray" style={{ marginBottom: 4 }}>
+            Seçili gün: {date}
+          </span>
         )}
         {!viewingToday && (
-          <button type="button" onClick={goToToday} className="btn btn-ghost btn-sm">
+          <button type="button" onClick={goToToday} className="btn btn-ghost btn-sm" style={{ marginBottom: 4 }}>
             Bugüne dön
           </button>
         )}

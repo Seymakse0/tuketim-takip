@@ -8,9 +8,9 @@ export default function Home() {
         <div>
           <h1 className="page-title">Et tüketim kontrolü</h1>
           <p className="page-sub">
-            Bugünün tüketimini aşağıdan girebilir veya güncelleyebilirsiniz. Geçmiş gün ve günlük / haftalık /
-            aylık özet raporlar için karttaki <strong>Rapor bölümüne git</strong> ile{" "}
-            <strong>Rapor tablosu</strong> sayfasına geçin.
+            <strong>Kayıt tarihi</strong> alanından günü seçerek o güne ait tüketimi girebilir veya
+            güncelleyebilirsiniz. Günlük / haftalık / aylık özet raporlar için karttaki{" "}
+            <strong>Rapor bölümüne git</strong> ile <strong>Rapor tablosu</strong> sayfasına geçin.
           </p>
         </div>
       </header>
