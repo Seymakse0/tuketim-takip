@@ -7,8 +7,6 @@ import {
   endOfMonth,
   format,
 } from "date-fns";
-import { tr } from "date-fns/locale";
-
 /** Takvim günü olarak YYYY-MM-DD (PostgreSQL @db.Date ile uyumlu) */
 export function dateToYmd(d: Date): string {
   // toISOString() UTC kullanır; UTC+ bölgelerde yerel gece yarısı bir gün geri kayar (ör. İstanbul).
@@ -67,6 +65,26 @@ export function monthRange(date: Date) {
   return { from: startOfMonth(d), to: endOfMonth(d) };
 }
 
+/** Türkçe tarih etiketleri — date-fns locale alt yolu bazı TS ortamlarında çözülmediği için Intl kullanılır */
 export function formatTr(d: Date, pattern: string) {
-  return format(d, pattern, { locale: tr });
+  switch (pattern) {
+    case "MMMM yyyy":
+      return new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" }).format(d);
+    case "d MMMM yyyy":
+      return new Intl.DateTimeFormat("tr-TR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(d);
+    case "d MMM yyyy":
+      return new Intl.DateTimeFormat("tr-TR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(d);
+    case "d MMM":
+      return new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" }).format(d);
+    default:
+      return format(d, pattern);
+  }
 }

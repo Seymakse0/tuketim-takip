@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 type ReportRow = {
   categoryCode: string;
@@ -10,7 +10,7 @@ type ReportRow = {
 };
 
 type ReportPayload = {
-  type: string;
+  type: "daily" | "weekly";
   label: string;
   rows: ReportRow[];
   totalKg: number;
@@ -18,6 +18,28 @@ type ReportPayload = {
   to?: string;
   date?: string;
 };
+
+type MonthlyGridPayload = {
+  type: "monthly-grid";
+  label: string;
+  year: number;
+  month: number;
+  from: string;
+  to: string;
+  dates: string[];
+  meatItems: Array<{
+    id: string;
+    categoryCode: string;
+    categoryName: string;
+    label: string;
+  }>;
+  matrix: Record<string, Record<string, number>>;
+};
+
+type ReportState = ReportPayload | MonthlyGridPayload | null;
+
+/** Hızlı ay/yıl değişiminde eski fetch sonucunun state’e yazılmasını engeller */
+let monthlyGridLoadSeq = 0;
 
 const MONTH_OPTIONS = [
   { value: 1, label: "Ocak" },
@@ -57,6 +79,25 @@ function fmtKgCell(n: number): string {
   return String(r).replace(".", ",");
 }
 
+function dailyTotalsForMonth(grid: MonthlyGridPayload): number[] {
+  return grid.dates.map((date) =>
+    grid.meatItems.reduce((sum, m) => sum + (grid.matrix[m.id]?.[date] ?? 0), 0),
+  );
+}
+
+function rowTotalForMonth(meatId: string, grid: MonthlyGridPayload): number {
+  return grid.dates.reduce((s, d) => s + (grid.matrix[meatId]?.[d] ?? 0), 0);
+}
+
+/** Yerel gün / kısa gün adı (Türkçe) — date-fns locale alt yolu TS çözümü sorunlarından kaçınır */
+function formatGridDayHeader(isoYmd: string): { num: string; dow: string } {
+  const dt = new Date(`${isoYmd}T12:00:00`);
+  return {
+    num: new Intl.DateTimeFormat("tr-TR", { day: "numeric" }).format(dt),
+    dow: new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(dt),
+  };
+}
+
 export function ReportPanel() {
   const [kind, setKind] = useState<"daily" | "weekly" | "monthly">("daily");
   const [year, setYear] = useState(() => new Date().getFullYear());
@@ -77,15 +118,43 @@ export function ReportPanel() {
     return `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }, [year, month, day, maxDayInMonth]);
 
-  /** Aylık rapor: ayın ilk günü (yalnızca yıl/ay kullanılır). */
-  const dateMonthly = useMemo(
-    () => `${year}-${String(month).padStart(2, "0")}-01`,
-    [year, month],
-  );
-
-  const [report, setReport] = useState<ReportPayload | null>(null);
+  const [report, setReport] = useState<ReportState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchMonthlyGrid = useCallback(async () => {
+    const loadId = ++monthlyGridLoadSeq;
+    setLoading(true);
+    setError(null);
+    try {
+      const path = `/api/reports/monthly-grid?year=${year}&month=${month}`;
+      const res = await fetch(path);
+      const json: unknown = await res.json();
+      if (loadId !== monthlyGridLoadSeq) return;
+      if (!res.ok) {
+        const err = json as { error?: string };
+        throw new Error(err.error || "Rapor oluşturulamadı.");
+      }
+      const data = json as Partial<MonthlyGridPayload>;
+      if (data.type !== "monthly-grid" || !Array.isArray(data.dates) || !Array.isArray(data.meatItems)) {
+        throw new Error("Sunucudan beklenmeyen rapor yanıtı.");
+      }
+      setReport(data as MonthlyGridPayload);
+    } catch (e) {
+      if (loadId !== monthlyGridLoadSeq) return;
+      setError(e instanceof Error ? e.message : "Beklenmeyen bir hata oluştu.");
+    } finally {
+      if (loadId === monthlyGridLoadSeq) setLoading(false);
+    }
+  }, [year, month]);
+
+  useEffect(() => {
+    setReport(null);
+  }, [kind]);
+
+  useEffect(() => {
+    if (kind !== "monthly") return;
+    void fetchMonthlyGrid();
+  }, [kind, year, month, fetchMonthlyGrid]);
 
   const yearOptions = useMemo(() => {
     const y0 = new Date().getFullYear();
@@ -95,15 +164,17 @@ export function ReportPanel() {
   const dayOptions = useMemo(() => Array.from({ length: maxDayInMonth }, (_, i) => i + 1), [maxDayInMonth]);
 
   const run = async () => {
-    setLoading(true);
     setError(null);
+    if (kind === "monthly") {
+      await fetchMonthlyGrid();
+      return;
+    }
+    setLoading(true);
     setReport(null);
     try {
       let path: string;
       if (kind === "daily") {
         path = `/api/reports/daily?date=${encodeURIComponent(dateDaily)}`;
-      } else if (kind === "monthly") {
-        path = `/api/reports/monthly?date=${encodeURIComponent(dateMonthly)}`;
       } else {
         if (!DATE_ONLY.test(weekFrom) || !DATE_ONLY.test(weekTo)) {
           throw new Error("Başlangıç ve bitiş için geçerli tarih seçin.");
@@ -114,9 +185,9 @@ export function ReportPanel() {
         path = `/api/reports/weekly?from=${encodeURIComponent(weekFrom)}&to=${encodeURIComponent(weekTo)}`;
       }
       const res = await fetch(path);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Rapor oluşturulamadı.");
-      setReport(json);
+      const json: unknown = await res.json();
+      if (!res.ok) throw new Error((json as { error?: string }).error || "Rapor oluşturulamadı.");
+      setReport(json as ReportPayload);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Beklenmeyen bir hata oluştu.");
     } finally {
@@ -129,7 +200,7 @@ export function ReportPanel() {
       ? "Seçilen günün özeti."
       : kind === "weekly"
         ? "Başlangıç ve bitiş tarihleri arasındaki tüketim toplamları (dönem istediğiniz gibi seçilebilir)."
-        : "Seçilen ayın tamamı özeti (gün seçilmez).";
+        : "Ay veya yılı değiştirdiğinizde tablo güncellenir: her sütun bir gün, en altta o günün toplamı.";
 
   const intro =
     kind === "monthly"
@@ -137,6 +208,15 @@ export function ReportPanel() {
       : kind === "weekly"
         ? "Rapor türü ve haftalık dönem için başlangıç/bitiş tarihlerini seçin; "
         : "Rapor türü, yıl, ay ve günü seçin; ";
+
+  const introRun =
+    kind === "monthly" ? (
+      "Günlük sütunlar yıl veya ayı değiştirdiğinizde otomatik güncellenir; "
+    ) : (
+      <>
+        <strong>Raporu oluştur</strong> ile tabloyu getirin;{" "}
+      </>
+    );
 
   return (
     <div id="raporlar" className="scroll-mt-6 rapor-ozet-root" aria-labelledby="raporlar-baslik">
@@ -146,7 +226,8 @@ export function ReportPanel() {
 
       <p className="voyage-muted mb-16" style={{ maxWidth: 640 }}>
         {intro}
-        <strong>Raporu oluştur</strong> ile tabloyu getirin. <span className="voyage-muted">{kindHint}</span>
+        {introRun}
+        <span className="voyage-muted">{kindHint}</span>
       </p>
 
       <div className="rapor-ozet-toolbar">
@@ -258,7 +339,17 @@ export function ReportPanel() {
         </p>
       )}
 
-      {report && (
+      {report && report.type === "monthly-grid" && (
+        <div className="rapor-ozet-sonuc">
+          <p className="rapor-ozet-sonuc-baslik">{report.label}</p>
+          <p className="voyage-muted mb-16">
+            Dönem: {report.from} – {report.to}
+          </p>
+          <MonthlyGridTable grid={report} />
+        </div>
+      )}
+
+      {report && report.type !== "monthly-grid" && (
         <div className="rapor-ozet-sonuc">
           <p className="rapor-ozet-sonuc-baslik">{report.label}</p>
           {report.from && report.to ? (
@@ -302,6 +393,70 @@ export function ReportPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MonthlyGridTable({ grid }: { grid: MonthlyGridPayload }) {
+  const dailyTotals = useMemo(() => dailyTotalsForMonth(grid), [grid]);
+  const grandTotal = useMemo(() => dailyTotals.reduce((s, n) => s + n, 0), [dailyTotals]);
+
+  return (
+    <div className="rapor-ozet-table-scroll rapor-ay-grid-scroll">
+      <table
+        className="voyage-report-table rapor-ozet-table rapor-ay-grid-table"
+        style={{ minWidth: `${Math.max(520, 240 + grid.dates.length * 48 + 96)}px` }}
+      >
+        <thead>
+          <tr>
+            <th scope="col">Kod</th>
+            <th scope="col">Kategori</th>
+            <th scope="col">Et türü</th>
+            {grid.dates.map((d) => {
+              const { num, dow } = formatGridDayHeader(d);
+              return (
+                <th key={d} scope="col" className="rapor-ozet-col-num rapor-ay-grid-dayhead" title={d}>
+                  <span className="rapor-ay-grid-daynum">{num}</span>
+                  <span className="rapor-ay-grid-dow">{dow}</span>
+                </th>
+              );
+            })}
+            <th scope="col" className="rapor-ozet-col-num">
+              Ay toplamı
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {grid.meatItems.map((m) => (
+            <tr key={m.id}>
+              <td>{m.categoryCode}</td>
+              <td>{m.categoryName}</td>
+              <td>{m.label}</td>
+              {grid.dates.map((d) => (
+                <td key={d} className="rapor-ozet-col-num">
+                  {fmtKgCell(grid.matrix[m.id]?.[d] ?? 0)}
+                </td>
+              ))}
+              <td className="rapor-ozet-col-num">{fmtKgCell(rowTotalForMonth(m.id, grid))}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={3} style={{ fontWeight: 700 }}>
+              Günlük toplam
+            </td>
+            {dailyTotals.map((t, i) => (
+              <td key={grid.dates[i]} className="rapor-ozet-col-num" style={{ fontWeight: 700 }}>
+                {fmtKgCell(t)}
+              </td>
+            ))}
+            <td className="rapor-ozet-col-num" style={{ fontWeight: 700 }}>
+              {fmtKgCell(grandTotal)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

@@ -33,6 +33,11 @@ declare global {
       [elemName: string]: ShimAny;
     }
   }
+
+  /** @types/node yokken bile server kodunda process.env kullanımı */
+  var process: {
+    env: Record<string, string | undefined>;
+  };
 }
 
 declare module "next/navigation" {

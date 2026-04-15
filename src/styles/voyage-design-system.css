@@ -750,6 +750,34 @@ table.rapor-ozet-table {
   white-space: nowrap;
 }
 
+/* Aylık rapor — günlük sütun başlıkları */
+.rapor-ay-grid-dayhead {
+  vertical-align: bottom;
+  line-height: 1.2;
+  min-width: 44px;
+  padding: 8px 6px !important;
+}
+
+.rapor-ay-grid-daynum {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.rapor-ay-grid-dow {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+table.rapor-ay-grid-table thead th {
+  white-space: normal;
+}
+
 .rapor-tablo-inline-link {
   color: var(--gold);
   font-weight: 600;
