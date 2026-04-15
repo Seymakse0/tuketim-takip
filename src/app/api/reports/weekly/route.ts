@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { dateToYmd, endOfUtcCalendarDay, formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
+import { dateToYmd, formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
+import { endOfDay } from "date-fns";
 
 export async function GET(req: NextRequest) {
   const fromQ = req.nextUrl.searchParams.get("from");
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
       }
-      const to = endOfUtcCalendarDay(toBoundary);
+      const to = endOfDay(toBoundary);
 
       const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
       type MeatItemRow = (typeof meatItems)[number];

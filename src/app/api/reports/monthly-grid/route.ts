@@ -44,12 +44,12 @@ export async function GET(req: NextRequest) {
       matrix[c.meatItemId][ymd] = (matrix[c.meatItemId][ymd] ?? 0) + c.quantityKg;
     }
 
-    const y = anchor.getUTCFullYear();
-    const m0 = anchor.getUTCMonth();
-    const lastDay = new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
+    const y = anchor.getFullYear();
+    const m0 = anchor.getMonth();
+    const lastDay = new Date(y, m0 + 1, 0).getDate();
     const dates: string[] = [];
     for (let dom = 1; dom <= lastDay; dom++) {
-      dates.push(dateToYmd(new Date(Date.UTC(y, m0, dom))));
+      dates.push(dateToYmd(new Date(y, m0, dom)));
     }
 
     return NextResponse.json({
