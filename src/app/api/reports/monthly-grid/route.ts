@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { dateToYmd, formatTr, monthRange, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
-import { format } from "date-fns";
 
 export async function GET(req: NextRequest) {
   const yStr = req.nextUrl.searchParams.get("year");
@@ -45,11 +44,12 @@ export async function GET(req: NextRequest) {
       matrix[c.meatItemId][ymd] = (matrix[c.meatItemId][ymd] ?? 0) + c.quantityKg;
     }
 
+    const y = anchor.getUTCFullYear();
+    const m0 = anchor.getUTCMonth();
+    const lastDay = new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
     const dates: string[] = [];
-    const cur = new Date(from);
-    while (cur <= to) {
-      dates.push(dateToYmd(cur));
-      cur.setDate(cur.getDate() + 1);
+    for (let dom = 1; dom <= lastDay; dom++) {
+      dates.push(dateToYmd(new Date(Date.UTC(y, m0, dom))));
     }
 
     return NextResponse.json({
@@ -57,8 +57,8 @@ export async function GET(req: NextRequest) {
       label: formatTr(anchor, "MMMM yyyy"),
       year,
       month,
-      from: format(from, "yyyy-MM-dd"),
-      to: format(to, "yyyy-MM-dd"),
+      from: dateToYmd(from),
+      to: dateToYmd(to),
       dates,
       meatItems: meatItems.map((m: MeatRow) => ({
         id: m.id,

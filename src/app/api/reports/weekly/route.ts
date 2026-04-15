@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
+import { dateToYmd, endOfUtcCalendarDay, formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
-import { endOfDay, format } from "date-fns";
 
 export async function GET(req: NextRequest) {
   const fromQ = req.nextUrl.searchParams.get("from");
@@ -26,7 +25,7 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
       }
-      const to = endOfDay(toBoundary);
+      const to = endOfUtcCalendarDay(toBoundary);
 
       const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
       type MeatItemRow = (typeof meatItems)[number];
@@ -42,8 +41,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         type: "weekly" as const,
         label: `${formatTr(from, "d MMM yyyy")} – ${formatTr(toBoundary, "d MMM yyyy")}`,
-        from: format(from, "yyyy-MM-dd"),
-        to: format(toBoundary, "yyyy-MM-dd"),
+        from: dateToYmd(from),
+        to: dateToYmd(toBoundary),
         rows: meatItems.map((m: MeatItemRow) => ({
           categoryCode: m.categoryCode,
           categoryName: m.categoryName,
@@ -86,8 +85,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       type: "weekly" as const,
       label: `${formatTr(from, "d MMM")} – ${formatTr(to, "d MMM yyyy")}`,
-      from: format(from, "yyyy-MM-dd"),
-      to: format(to, "yyyy-MM-dd"),
+      from: dateToYmd(from),
+      to: dateToYmd(to),
       rows: meatItems.map((m: MeatItemRow) => ({
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,

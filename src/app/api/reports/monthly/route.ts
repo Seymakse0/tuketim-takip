@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { formatTr, monthRange, parseDateOnly } from "@/lib/dates";
+import { dateToYmd, formatTr, monthRange, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
-import { format } from "date-fns";
 
 export async function GET(req: NextRequest) {
   const dateStr = req.nextUrl.searchParams.get("date");
@@ -36,8 +35,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       type: "monthly" as const,
       label: formatTr(anchor, "MMMM yyyy"),
-      from: format(from, "yyyy-MM-dd"),
-      to: format(to, "yyyy-MM-dd"),
+      from: dateToYmd(from),
+      to: dateToYmd(to),
       rows: meatItems.map((m: MeatItemRow) => ({
         categoryCode: m.categoryCode,
         categoryName: m.categoryName,
