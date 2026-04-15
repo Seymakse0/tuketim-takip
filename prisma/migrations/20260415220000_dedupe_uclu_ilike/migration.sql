@@ -1,7 +1,5 @@
--- Tek seferlik: iki satırda "DANA ÜÇLÜ SET" görünüyorsa.
--- Tam metin eşleşmeyebilir; ILIKE ile eşleştirilir.
---
--- docker compose -f docker-compose.production.yml exec -T db psql -U tuketim -d tuketim_kontrol < deploy/sql/fix-duplicate-dana-uclu.sql
+-- Tam metin eşleşmeyebilir (Unicode / görünmez karakter). ILIKE ile "üçlü set + triple", ekstra olmayan
+-- fazla satırların ilki kalır, diğerleri DANA BEŞLİ SET olur.
 
 UPDATE "meat_items"
 SET "label" = trim(regexp_replace("label", '\s+', ' ', 'g'))
@@ -68,7 +66,6 @@ BEGIN
   END LOOP;
 END $$;
 
--- Kalan ilk ÜÇLÜ benzeri satırın etiketini standart yap (tek satır; çoğaltma yapmaz)
 UPDATE "meat_items"
 SET "label" = 'DANA ÜÇLÜ SET / BEEF TRIPLE SET'
 WHERE "id" = (
