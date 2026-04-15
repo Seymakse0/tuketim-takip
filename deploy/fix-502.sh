@@ -7,6 +7,10 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+# shellcheck source=deploy/lib-build-safe.sh
+source "$REPO_ROOT/deploy/lib-build-safe.sh"
+
 COMPOSE=(docker compose -f docker-compose.production.yml)
 EXPECTED_MAP="127.0.0.1:3005:3000"
 
@@ -44,9 +48,9 @@ if ! grep -q "127.0.0.1:3005:3000" docker-compose.production.yml 2>/dev/null; th
   echo "Uyarı: docker-compose.production.yml içinde 127.0.0.1:3005:3000 bekleniyordu; kontrol edin." >&2
 fi
 
-echo "==> docker compose up -d --build --force-recreate app"
+echo "==> docker compose build + up (düşük öncelik; diğer siteler için throttled)"
 echo "   (db bağımlılığı hazır olana kadar Compose bekler; ilk açılışta 1–2 dk sürebilir)"
-"${COMPOSE[@]}" up -d --build --force-recreate app
+run_host_throttled_build "${COMPOSE[@]}" up -d --build --force-recreate app
 
 echo "==> 5 sn bekleniyor…"
 sleep 5

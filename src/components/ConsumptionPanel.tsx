@@ -10,6 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { addCalendarDaysYmd } from "@/lib/dates";
 
 type ItemRow = {
   meatItemId: string;
@@ -26,6 +27,8 @@ type ConsumptionResponse = {
 };
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const MIN_INPUT_YMD = "2000-01-01";
+const MAX_INPUT_YMD = "2100-12-31";
 const MAX_KG = 1_000_000;
 
 function todayInputValue() {
@@ -192,6 +195,13 @@ export function ConsumptionPanel() {
     router.replace(`${pathname}?date=${encodeURIComponent(v)}`);
   };
 
+  const goToAdjacentDay = (delta: number) => {
+    const next = addCalendarDaysYmd(date, delta);
+    if (next < MIN_INPUT_YMD || next > MAX_INPUT_YMD) return;
+    setDate(next);
+    router.replace(`${pathname}?date=${encodeURIComponent(next)}`);
+  };
+
   return (
     <section id="gunluk-giris" className="card scroll-mt-6" aria-labelledby="gunluk-giris-baslik">
       <div className="card-title" style={{ marginBottom: 12 }}>
@@ -212,10 +222,11 @@ export function ConsumptionPanel() {
       </div>
 
       <p className="voyage-muted mb-16">
-        Her et için <strong>kilogram</strong> değerini kutuya yazın (yalnızca rakam ve virgül; ondalık
-        ayırıcı virgüldür). Kayıtlar <strong>0,5 kg</strong> adımlarına yuvarlanır.{" "}
-        <strong>Kaydet</strong> ile kaydedin. Aşağıdan <strong>kayıt tarihini</strong> değiştirerek bugün veya
-        geçmiş (ve gelecek) herhangi bir güne veri girebilirsiniz.
+        Önce <strong>kayıt tarihini</strong> seçin (aşağıdaki takvim veya{" "}
+        <strong>önceki / sonraki gün</strong>): veri hangi güne ait olacaksa o günü işaretleyin — yalnızca bugün
+        değil; <strong>geçmiş veya gelecek herhangi bir güne</strong> kayıt girebilirsiniz. Her et için{" "}
+        <strong>kilogram</strong> yazın (rakam ve virgül; 0,5 kg adımlarına yuvarlanır), ardından{" "}
+        <strong>Kaydet</strong>.
       </p>
 
       <div
@@ -224,16 +235,38 @@ export function ConsumptionPanel() {
       >
         <div className="form-group" style={{ marginBottom: 0, minWidth: 200 }}>
           <label htmlFor="gunluk-tarih" className="form-label">
-            Kayıt tarihi
+            Kayıt tarihi (hangi güne yazılacak)
           </label>
-          <input
-            id="gunluk-tarih"
-            type="date"
-            value={date}
-            min="2000-01-01"
-            max="2100-12-31"
-            onChange={onDateChange}
-          />
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ marginBottom: 0 }}
+              disabled={date <= MIN_INPUT_YMD}
+              onClick={() => goToAdjacentDay(-1)}
+              aria-label="Bir gün geri"
+            >
+              ← Önceki gün
+            </button>
+            <input
+              id="gunluk-tarih"
+              type="date"
+              value={date}
+              min={MIN_INPUT_YMD}
+              max={MAX_INPUT_YMD}
+              onChange={onDateChange}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ marginBottom: 0 }}
+              disabled={date >= MAX_INPUT_YMD}
+              onClick={() => goToAdjacentDay(1)}
+              aria-label="Bir gün ileri"
+            >
+              Sonraki gün →
+            </button>
+          </div>
         </div>
         {viewingToday ? (
           <span className="badge badge-green" style={{ marginBottom: 4 }}>

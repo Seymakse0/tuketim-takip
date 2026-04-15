@@ -226,7 +226,7 @@ docker compose -f docker-compose.production.yml up -d app
 
 **4) HTTPS ve domain (host Nginx)**
 
-Repoda örnek yapılandırma: **`deploy/nginx-kitchen.voyagestars.com.example.conf`** (başka alt alan için aynı kalıp: `deploy/nginx-follow.voyagestars.com.example.conf`).
+Repoda bu uygulama için örnek: **`deploy/nginx-kitchen.voyagestars.com.example.conf`** (`kitchen` → `127.0.0.1:3005`). Başka alt alanlar için genel kalıp: `deploy/nginx-follow.voyagestars.com.example.conf` (içindeki `PORT` hedef uygulamaya göre; **follow ayrı projedir**).
 
 - Sertifika: örn. `sudo certbot certonly --nginx -d kitchen.voyagestars.com` (veya elinizdeki wildcard sertifikayı kullanın).
 - Hızlı kurulum (sunucuda, sites-available / sites-enabled): `chmod +x deploy/install-kitchen-nginx.sh && ./deploy/install-kitchen-nginx.sh`

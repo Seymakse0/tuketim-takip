@@ -2,8 +2,8 @@
  * Bu makinede `@types/react` boş/bozuksa (sadece `ts5.0` klasörü vb.) JSX (TS7026) ve
  * `import … from "react"` çalışmaz. Bu dosya güvenli bir yedek tipler sağlar.
  *
- * `npm install` sonrası @types düzgün geldiyse ve “Subsequent property declarations”
- * / çift bildirim hataları görürsen bu dosyayı sil (veya tsconfig’ten çıkar).
+ * `@types/react` projede yok; tipler `react-shim.d.ts` üzerinden gelir (çift bildirim yok).
+ * `@types/node` ve diğer @types paketleri TypeScript’in varsayılan yüklemesiyle gelir.
  */
 export {};
 
@@ -33,11 +33,6 @@ declare global {
       [elemName: string]: ShimAny;
     }
   }
-
-  /** @types/node yokken bile server kodunda process.env kullanımı */
-  var process: {
-    env: Record<string, string | undefined>;
-  };
 }
 
 declare module "next/navigation" {
@@ -96,12 +91,4 @@ declare module "next/og" {
   export class ImageResponse extends Response {
     constructor(element: ShimAny, options?: ResponseInit & { width?: number; height?: number });
   }
-}
-
-declare module "next" {
-  export type Metadata = {
-    title?: string;
-    description?: string;
-    [key: string]: ShimAny;
-  };
 }

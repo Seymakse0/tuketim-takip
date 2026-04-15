@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Geçersiz tarih" }, { status: 400 });
   }
 
+  if (!isDateEditable(day)) {
+    return NextResponse.json({ error: "Bu tarih için kayıt düzenlenemez." }, { status: 403 });
+  }
+
   try {
     const validIds = new Set(
       (await prisma.meatItem.findMany({ select: { id: true } })).map((x: { id: string }) => x.id)

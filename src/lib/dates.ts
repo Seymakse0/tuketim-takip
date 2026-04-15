@@ -16,8 +16,15 @@ export function dateToYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function readAppTimezoneFromEnv(): string | undefined {
+  const g = globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  };
+  return g.process?.env?.APP_TIMEZONE;
+}
+
 export function todayYmd(): string {
-  const tz = process.env.APP_TIMEZONE;
+  const tz = readAppTimezoneFromEnv();
   if (tz) {
     return new Intl.DateTimeFormat("en-CA", {
       timeZone: tz,
@@ -45,6 +52,15 @@ export function parseDateOnly(iso: string): Date {
 export function isDateEditable(entryDate: Date): boolean {
   void entryDate;
   return true;
+}
+
+/** Yerel takvime göre YYYY-MM-DD ± gün (UTC kayması yok). */
+export function addCalendarDaysYmd(ymd: string, deltaDays: number): string {
+  const [y, m, d] = ymd.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return ymd;
+  const dt = new Date(y, m - 1, d + deltaDays);
+  if (Number.isNaN(dt.getTime())) return ymd;
+  return dateToYmd(dt);
 }
 
 export function dayRange(date: Date) {

@@ -7,6 +7,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# shellcheck source=deploy/lib-build-safe.sh
+source "$REPO_ROOT/deploy/lib-build-safe.sh"
+
 COMPOSE=(docker compose -f docker-compose.production.yml)
 
 if [[ ! -f .env ]]; then
@@ -18,11 +21,11 @@ echo "==> git pull"
 git pull
 
 if [[ "${NO_CACHE:-}" == "1" ]]; then
-  echo "==> docker compose build --no-cache app"
-  "${COMPOSE[@]}" build --no-cache app
+  echo "==> docker compose build --no-cache app (düşük öncelik; diğer siteler için throttled)"
+  run_host_throttled_build "${COMPOSE[@]}" build --no-cache app
 else
-  echo "==> docker compose build app"
-  "${COMPOSE[@]}" build app
+  echo "==> docker compose build app (düşük öncelik; diğer siteler için throttled)"
+  run_host_throttled_build "${COMPOSE[@]}" build app
 fi
 
 echo "==> docker compose up -d --force-recreate app"

@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:22-alpine AS deps
+# Tek VPS’te build sırasında tüm RAM’i tüketip OOM ile diğer siteleri düşürmesin
+ENV NODE_OPTIONS=--max-old-space-size=2048
 # npm postinstall prune script; find/grep (Alpine’de bash gerekmez)
 WORKDIR /app
 COPY package.json package-lock.json* ./
@@ -11,6 +13,7 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 FROM node:22-alpine AS builder
 WORKDIR /app
+ENV NODE_OPTIONS=--max-old-space-size=2048
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
