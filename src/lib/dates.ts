@@ -84,6 +84,19 @@ export function monthRange(date: Date) {
   return { from: startOfMonth(d), to: endOfMonth(d) };
 }
 
+/**
+ * Takvim ayının ilk ve son günü `YYYY-MM-DD` (yıl/ay doğrulanmış olmalı).
+ * Rapor sorgularında JS `Date` yerine PG `date` ile karşılaştırmak için.
+ */
+export function calendarMonthYmdBounds(year: number, month1to12: number): { fromYmd: string; toYmd: string } {
+  if (month1to12 < 1 || month1to12 > 12) throw new Error("Geçersiz ay");
+  const last = new Date(year, month1to12, 0).getDate();
+  return {
+    fromYmd: `${year}-${String(month1to12).padStart(2, "0")}-01`,
+    toYmd: `${year}-${String(month1to12).padStart(2, "0")}-${String(last).padStart(2, "0")}`,
+  };
+}
+
 /** Türkçe tarih etiketleri — date-fns locale alt yolu bazı TS ortamlarında çözülmediği için Intl kullanılır. */
 export function formatTr(d: Date, pattern: string) {
   switch (pattern) {

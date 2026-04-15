@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { dateToYmd, formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
-import { endOfDay } from "date-fns";
 
 export async function GET(req: NextRequest) {
   const fromQ = req.nextUrl.searchParams.get("from");
@@ -26,24 +25,28 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
       }
-      const to = endOfDay(toBoundary);
+      const fromYmd = fromQ.slice(0, 10);
+      const toYmd = toQ.slice(0, 10);
 
       const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
       type MeatItemRow = (typeof meatItems)[number];
-      const consumptions = await prisma.dailyConsumption.findMany({
-        where: { date: { gte: from, lte: to } },
-      });
-
-      const sumByMeat = new Map<string, number>();
-      for (const c of consumptions) {
-        sumByMeat.set(c.meatItemId, (sumByMeat.get(c.meatItemId) ?? 0) + c.quantityKg);
-      }
+      const sums = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; total: unknown }>>(
+        `SELECT meat_item_id, SUM(quantity_kg)::float AS total
+         FROM daily_consumption
+         WHERE date >= $1::date AND date <= $2::date
+         GROUP BY meat_item_id`,
+        fromYmd,
+        toYmd
+      );
+      const sumByMeat = new Map<string, number>(
+        sums.map((r: { meat_item_id: string; total: unknown }) => [r.meat_item_id, Number(r.total)])
+      );
 
       return NextResponse.json({
         type: "weekly" as const,
         label: `${formatTr(from, "d MMM yyyy")} – ${formatTr(toBoundary, "d MMM yyyy")}`,
-        from: dateToYmd(from),
-        to: dateToYmd(toBoundary),
+        from: fromYmd,
+        to: toYmd,
         rows: meatItems.map((m: MeatItemRow) => ({
           categoryCode: m.categoryCode,
           categoryName: m.categoryName,
@@ -72,16 +75,21 @@ export async function GET(req: NextRequest) {
     }
 
     const { from, to } = weekRangeContaining(anchor);
+    const fromYmd = dateToYmd(from);
+    const toYmd = dateToYmd(to);
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
     type MeatItemRow = (typeof meatItems)[number];
-    const consumptions = await prisma.dailyConsumption.findMany({
-      where: { date: { gte: from, lte: to } },
-    });
-
-    const sumByMeat = new Map<string, number>();
-    for (const c of consumptions) {
-      sumByMeat.set(c.meatItemId, (sumByMeat.get(c.meatItemId) ?? 0) + c.quantityKg);
-    }
+    const sums = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; total: unknown }>>(
+      `SELECT meat_item_id, SUM(quantity_kg)::float AS total
+       FROM daily_consumption
+       WHERE date >= $1::date AND date <= $2::date
+       GROUP BY meat_item_id`,
+      fromYmd,
+      toYmd
+    );
+    const sumByMeat = new Map<string, number>(
+      sums.map((r: { meat_item_id: string; total: unknown }) => [r.meat_item_id, Number(r.total)])
+    );
 
     return NextResponse.json({
       type: "weekly" as const,

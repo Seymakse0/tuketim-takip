@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/db";
-import { dayRange, formatTr, parseDateOnly } from "@/lib/dates";
+import { formatTr, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
@@ -18,13 +18,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-  const { from, to } = dayRange(day);
+  const ymd = dateStr.slice(0, 10);
   const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
-  const rows = await prisma.dailyConsumption.findMany({
-    where: { date: { gte: from, lte: to } },
-  });
+  const rows = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; quantity_kg: number }>>(
+    `SELECT meat_item_id, quantity_kg FROM daily_consumption WHERE date = $1::date`,
+    ymd
+  );
   const byId = new Map<string, number>(
-    rows.map((r: { meatItemId: string; quantityKg: number }) => [r.meatItemId, r.quantityKg])
+    rows.map((r: { meat_item_id: string; quantity_kg: number }) => [r.meat_item_id, r.quantity_kg])
   );
 
   const workbook = new ExcelJS.Workbook();

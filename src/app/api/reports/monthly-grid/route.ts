@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { dateToYmd, formatTr, monthRange, parseDateOnly } from "@/lib/dates";
+import { calendarMonthYmdBounds, formatTr, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
+
+type RawConsumptionRow = {
+  meat_item_id: string;
+  quantity_kg: number;
+  day: string;
+};
 
 export async function GET(req: NextRequest) {
   const yStr = req.nextUrl.searchParams.get("year");
@@ -26,30 +32,39 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { from, to } = monthRange(anchor);
+    const { fromYmd, toYmd } = calendarMonthYmdBounds(year, month);
+    const lastDay = Number.parseInt(toYmd.slice(8, 10), 10);
+
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
     type MeatRow = (typeof meatItems)[number];
 
-    const consumptions = await prisma.dailyConsumption.findMany({
-      where: { date: { gte: from, lte: to } },
-    });
+    /**
+     * PG `date` → Prisma `Date` dönüşümünde Node/tz kayması tüm satırların aynı güne
+     * yazılmasına yol açabiliyor; takvim gününü doğrudan SQL ile alıyoruz.
+     */
+    const consumptions = await prisma.$queryRawUnsafe<RawConsumptionRow[]>(
+      `SELECT meat_item_id, quantity_kg, to_char(date, 'YYYY-MM-DD') AS day
+       FROM daily_consumption
+       WHERE date >= $1::date AND date <= $2::date`,
+      fromYmd,
+      toYmd
+    );
 
     const matrix: Record<string, Record<string, number>> = {};
     for (const m of meatItems) {
       matrix[m.id] = {};
     }
     for (const c of consumptions) {
-      const ymd = dateToYmd(c.date);
-      if (!matrix[c.meatItemId]) matrix[c.meatItemId] = {};
-      matrix[c.meatItemId][ymd] = (matrix[c.meatItemId][ymd] ?? 0) + c.quantityKg;
+      const ymd = c.day;
+      if (!matrix[c.meat_item_id]) matrix[c.meat_item_id] = {};
+      matrix[c.meat_item_id][ymd] = (matrix[c.meat_item_id][ymd] ?? 0) + c.quantity_kg;
     }
 
-    const y = anchor.getFullYear();
-    const m0 = anchor.getMonth();
-    const lastDay = new Date(y, m0 + 1, 0).getDate();
     const dates: string[] = [];
     for (let dom = 1; dom <= lastDay; dom++) {
-      dates.push(dateToYmd(new Date(y, m0, dom)));
+      dates.push(
+        `${year}-${String(month).padStart(2, "0")}-${String(dom).padStart(2, "0")}`
+      );
     }
 
     return NextResponse.json({
@@ -57,8 +72,8 @@ export async function GET(req: NextRequest) {
       label: formatTr(anchor, "MMMM yyyy"),
       year,
       month,
-      from: dateToYmd(from),
-      to: dateToYmd(to),
+      from: fromYmd,
+      to: toYmd,
       dates,
       meatItems: meatItems.map((m: MeatRow) => ({
         id: m.id,

@@ -52,15 +52,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const ymd = dateStr.slice(0, 10);
     const [meatItems, rows] = await Promise.all([
       prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } }),
-      prisma.dailyConsumption.findMany({
-        where: { date: day },
-      }),
+      prisma.$queryRawUnsafe<Array<{ meat_item_id: string; quantity_kg: number }>>(
+        `SELECT meat_item_id, quantity_kg FROM daily_consumption WHERE date = $1::date`,
+        ymd
+      ),
     ]);
 
-    const byId = new Map(
-      rows.map((r: { meatItemId: string; quantityKg: number }) => [r.meatItemId, r.quantityKg])
+    const byId = new Map<string, number>(
+      rows.map((r: { meat_item_id: string; quantity_kg: number }) => [r.meat_item_id, r.quantity_kg])
     );
     const editable = isDateEditable(day);
 
