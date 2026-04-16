@@ -45,6 +45,7 @@ const lamb = {
 };
 
 async function main() {
+  // ÜRETİMDE ÇALIŞTIRMAYIN — tüm günlük tüketim kayıtlarını siler.
   await prisma.dailyConsumption.deleteMany();
   await prisma.meatItem.deleteMany();
 

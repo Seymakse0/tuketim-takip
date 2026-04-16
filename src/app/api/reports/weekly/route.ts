@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { dateToYmd, formatTr, parseDateOnly, weekRangeContaining } from "@/lib/dates";
+import {
+  assertIsoDateOnly,
+  dateToYmd,
+  formatTr,
+  parseDateOnly,
+  weekRangeContaining,
+} from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
@@ -25,18 +31,16 @@ export async function GET(req: NextRequest) {
           { status: 400 }
         );
       }
-      const fromYmd = fromQ.slice(0, 10);
-      const toYmd = toQ.slice(0, 10);
+      const fromYmd = assertIsoDateOnly(fromQ.slice(0, 10));
+      const toYmd = assertIsoDateOnly(toQ.slice(0, 10));
 
       const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
       type MeatItemRow = (typeof meatItems)[number];
       const sums = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; total: unknown }>>(
         `SELECT meat_item_id, SUM(quantity_kg)::float AS total
          FROM daily_consumption
-         WHERE date >= $1::date AND date <= $2::date
-         GROUP BY meat_item_id`,
-        fromYmd,
-        toYmd
+         WHERE date >= '${fromYmd}'::date AND date <= '${toYmd}'::date
+         GROUP BY meat_item_id`
       );
       const sumByMeat = new Map<string, number>(
         sums.map((r: { meat_item_id: string; total: unknown }) => [r.meat_item_id, Number(r.total)])
@@ -75,17 +79,15 @@ export async function GET(req: NextRequest) {
     }
 
     const { from, to } = weekRangeContaining(anchor);
-    const fromYmd = dateToYmd(from);
-    const toYmd = dateToYmd(to);
+    const fromYmd = assertIsoDateOnly(dateToYmd(from));
+    const toYmd = assertIsoDateOnly(dateToYmd(to));
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
     type MeatItemRow = (typeof meatItems)[number];
     const sums = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; total: unknown }>>(
       `SELECT meat_item_id, SUM(quantity_kg)::float AS total
        FROM daily_consumption
-       WHERE date >= $1::date AND date <= $2::date
-       GROUP BY meat_item_id`,
-      fromYmd,
-      toYmd
+       WHERE date >= '${fromYmd}'::date AND date <= '${toYmd}'::date
+       GROUP BY meat_item_id`
     );
     const sumByMeat = new Map<string, number>(
       sums.map((r: { meat_item_id: string; total: unknown }) => [r.meat_item_id, Number(r.total)])

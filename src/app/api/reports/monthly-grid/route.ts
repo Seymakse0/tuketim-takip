@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { calendarMonthYmdBounds, formatTr, parseDateOnly } from "@/lib/dates";
+import { assertIsoDateOnly, calendarMonthYmdBounds, formatTr, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
@@ -32,7 +32,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { fromYmd, toYmd } = calendarMonthYmdBounds(year, month);
+    const rawBounds = calendarMonthYmdBounds(year, month);
+    const fromYmd = assertIsoDateOnly(rawBounds.fromYmd);
+    const toYmd = assertIsoDateOnly(rawBounds.toYmd);
     const lastDay = Number.parseInt(toYmd.slice(8, 10), 10);
 
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
@@ -45,9 +47,7 @@ export async function GET(req: NextRequest) {
     const consumptions = await prisma.$queryRawUnsafe<RawConsumptionRow[]>(
       `SELECT meat_item_id, quantity_kg, to_char(date, 'YYYY-MM-DD') AS day
        FROM daily_consumption
-       WHERE date >= $1::date AND date <= $2::date`,
-      fromYmd,
-      toYmd
+       WHERE date >= '${fromYmd}'::date AND date <= '${toYmd}'::date`
     );
 
     const matrix: Record<string, Record<string, number>> = {};

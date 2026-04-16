@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { calendarMonthYmdBounds, formatTr, parseDateOnly } from "@/lib/dates";
+import { assertIsoDateOnly, calendarMonthYmdBounds, formatTr, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
@@ -22,16 +22,16 @@ export async function GET(req: NextRequest) {
   try {
     const year = anchor.getFullYear();
     const month = anchor.getMonth() + 1;
-    const { fromYmd, toYmd } = calendarMonthYmdBounds(year, month);
+    const b = calendarMonthYmdBounds(year, month);
+    const fromYmd = assertIsoDateOnly(b.fromYmd);
+    const toYmd = assertIsoDateOnly(b.toYmd);
     const meatItems = await prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } });
     type MeatItemRow = (typeof meatItems)[number];
     const sums = await prisma.$queryRawUnsafe<Array<{ meat_item_id: string; total: unknown }>>(
       `SELECT meat_item_id, SUM(quantity_kg)::float AS total
        FROM daily_consumption
-       WHERE date >= $1::date AND date <= $2::date
-       GROUP BY meat_item_id`,
-      fromYmd,
-      toYmd
+       WHERE date >= '${fromYmd}'::date AND date <= '${toYmd}'::date
+       GROUP BY meat_item_id`
     );
 
     const sumByMeat = new Map<string, number>(

@@ -51,6 +51,19 @@ export function parseDateOnly(iso: string): Date {
   return startOfDay(dt);
 }
 
+/**
+ * PG `date` + Prisma yazımı için: takvim günü YYYY-MM-DD → UTC gece yarısı.
+ * Yerel `Date` (ör. Europe/Istanbul) PG’ye giderken bir gün geri kayıyordu; GET ise
+ * `'…'::date` ile doğru günü okuduğu için giriş/rapor uyuşmuyordu.
+ */
+export function isoDateOnlyToPrismaPgDate(ymd: string): Date {
+  const s = assertIsoDateOnly(ymd.slice(0, 10));
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (Number.isNaN(dt.getTime())) throw new Error("Geçersiz tarih");
+  return dt;
+}
+
 /** Geçmiş günler dahil tüm takvim tarihlerinde kayıt girilebilir / güncellenir. */
 export function isDateEditable(entryDate: Date): boolean {
   void entryDate;
@@ -82,6 +95,17 @@ export function weekRangeContaining(date: Date) {
 export function monthRange(date: Date) {
   const d = startOfDay(date);
   return { from: startOfMonth(d), to: endOfMonth(d) };
+}
+
+const ISO_YMD = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Ham SQL’de `'…'::date` ile birleştirmeden önce — yalnızca YYYY-MM-DD kabul edilir.
+ * `$1::date` parametre bağlama bazen PG sürücüsünde eşleşmeyi kaçırabiliyordu.
+ */
+export function assertIsoDateOnly(s: string): string {
+  if (typeof s !== "string" || !ISO_YMD.test(s)) throw new Error("Geçersiz tarih biçimi");
+  return s;
 }
 
 /**

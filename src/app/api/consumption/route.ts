@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isDateEditable, parseDateOnly } from "@/lib/dates";
+import { assertIsoDateOnly, isDateEditable, isoDateOnlyToPrismaPgDate, parseDateOnly } from "@/lib/dates";
 import { normalizeMeatItemLabel } from "@/lib/meat-labels";
 import { prismaErrorResponse } from "@/lib/prisma-http";
 
@@ -52,12 +52,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const ymd = dateStr.slice(0, 10);
+    const ymd = assertIsoDateOnly(dateStr.slice(0, 10));
     const [meatItems, rows] = await Promise.all([
       prisma.meatItem.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.$queryRawUnsafe<Array<{ meat_item_id: string; quantity_kg: number }>>(
-        `SELECT meat_item_id, quantity_kg FROM daily_consumption WHERE date = $1::date`,
-        ymd
+        `SELECT meat_item_id, quantity_kg FROM daily_consumption WHERE date = '${ymd}'::date`
       ),
     ]);
 
@@ -100,13 +99,16 @@ export async function POST(req: NextRequest) {
 
   const { date, items } = parsed;
   let day: Date;
+  let dayForPolicy: Date;
   try {
-    day = parseDateOnly(date);
+    const ymd = assertIsoDateOnly(date.slice(0, 10));
+    day = isoDateOnlyToPrismaPgDate(ymd);
+    dayForPolicy = parseDateOnly(ymd);
   } catch {
     return NextResponse.json({ error: "Geçersiz tarih" }, { status: 400 });
   }
 
-  if (!isDateEditable(day)) {
+  if (!isDateEditable(dayForPolicy)) {
     return NextResponse.json({ error: "Bu tarih için kayıt düzenlenemez." }, { status: 403 });
   }
 
@@ -122,17 +124,21 @@ export async function POST(req: NextRequest) {
 
     await prisma.$transaction(
       items.map((row: { meatItemId: string; quantityKg: number }) =>
-        prisma.dailyConsumption.upsert({
-          where: {
-            date_meatItemId: { date: day, meatItemId: row.meatItemId },
-          },
-          create: {
-            date: day,
-            meatItemId: row.meatItemId,
-            quantityKg: row.quantityKg,
-          },
-          update: { quantityKg: row.quantityKg },
-        })
+        row.quantityKg === 0
+          ? prisma.dailyConsumption.deleteMany({
+              where: { date: day, meatItemId: row.meatItemId },
+            })
+          : prisma.dailyConsumption.upsert({
+              where: {
+                date_meatItemId: { date: day, meatItemId: row.meatItemId },
+              },
+              create: {
+                date: day,
+                meatItemId: row.meatItemId,
+                quantityKg: row.quantityKg,
+              },
+              update: { quantityKg: row.quantityKg },
+            })
       )
     );
 
