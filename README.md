@@ -4,7 +4,7 @@ Mutfak departmanının dana ve kuzu et kalemlerini **günlük kg (tam sayı)** o
 
 ## Özellikler
 
-- Resimlerdeki tüm et türleri veritabanında tanımlı (16 dana + 8 kuzu).
+- Resimlerdeki tüm et türleri veritabanında tanımlı (16 dana + 9 kuzu).
 - Giriş alanları yalnızca **tam sayı** kabul eder; API tarafında `zod` ile doğrulanır.
 - **Yalnızca bugünün** kaydı düzenlenebilir; geçmiş günler salt okunur.
 - Tarih seçerek geçmiş tüketime bakma, raporlar ve günlük Excel indirme.
